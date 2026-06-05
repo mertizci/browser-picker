@@ -21,6 +21,11 @@ final class URLRouter: ObservableObject {
     }
 
     func route(url: URL, sourceApp: String? = nil) {
+        // On a cold launch the link arrives before profiles have been
+        // discovered. Load them on demand so the very first click resolves
+        // instead of failing with "profile not found".
+        ensureProfilesLoaded()
+
         let context = RoutingContext(url: url, sourceApp: sourceApp)
         let settings = settingsStore.settings
 
@@ -65,6 +70,11 @@ final class URLRouter: ObservableObject {
                 showError(error)
             }
         }
+    }
+
+    private func ensureProfilesLoaded() {
+        guard settingsStore.profiles.isEmpty else { return }
+        settingsStore.reloadProfiles()
     }
 
     private func showError(_ error: Error) {
