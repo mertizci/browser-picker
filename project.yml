@@ -1,0 +1,30 @@
+name: BrowserPicker
+options:
+  bundleIdPrefix: com.browserpicker
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+targets:
+  BrowserPicker:
+    type: application
+    platform: macOS
+    sources:
+      - BrowserPicker
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.browserpicker.app
+        INFOPLIST_FILE: BrowserPicker/Info.plist
+        CODE_SIGN_ENTITLEMENTS: BrowserPicker/BrowserPicker.entitlements
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.0
+        COMBINE_HIDPI_IMAGES: YES
+        OTHER_LDFLAGS: ["-lsqlite3"]
+    scheme:
+      gatherCoverageData: false

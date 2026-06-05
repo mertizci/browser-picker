@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser Picker — FAQ</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1d1d1f;
+    --muted: #6e6e73;
+    --card: #f5f5f7;
+    --border: rgba(0,0,0,0.08);
+    --accent: #0a84ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1e;
+      --fg: #f5f5f7;
+      --muted: #98989d;
+      --card: #2a2a2c;
+      --border: rgba(255,255,255,0.1);
+      --accent: #0a84ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    padding: 32px 36px 48px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 26px; font-weight: 700; margin: 0 0 6px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin: 0; }
+  .faq-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+  .faq-item h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .faq-item h2::before {
+    content: "Q";
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  .faq-item p { margin: 0; font-size: 14px; color: var(--fg); }
+  .faq-item p + p { margin-top: 8px; }
+  code {
+    background: var(--border);
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+  }
+  ol, ul { margin: 8px 0 0; padding-left: 20px; font-size: 14px; }
+  li { margin-bottom: 4px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  footer {
+    margin-top: 32px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Frequently Asked Questions</h1>
+    <p class="subtitle">Everything you need to know about Browser Picker.</p>
+  </header>
+
+  <div class="faq-item">
+    <h2>What does Browser Picker do?</h2>
+    <p>Browser Picker becomes your default browser and intercepts every link. It then routes each link to the right browser and profile — either automatically using your rules, or by asking you each time.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>How do I set it as the default browser?</h2>
+    <p>Open the menu bar icon and choose <strong>Set as Default Browser…</strong>. macOS may ask you to confirm. Once set, all links from other apps flow through Browser Picker.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>How do rules work?</h2>
+    <p>A rule matches a link by URL pattern (contains, host equals, or host suffix) and sends it to a specific browser profile. Rules are checked top to bottom — the <strong>first match wins</strong>. You can reorder them by dragging.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>What happens when no rule matches?</h2>
+    <p>You choose the fallback in <strong>Settings → General</strong>:</p>
+    <ul>
+      <li><strong>Use menu bar selection</strong> — opens silently in your current menu bar choice.</li>
+      <li><strong>Show picker</strong> — asks which browser and profile to use each time.</li>
+    </ul>
+  </div>
+
+  <div class="faq-item">
+    <h2>Why does Safari need Accessibility permission?</h2>
+    <p>To open a link in a specific Safari profile, Browser Picker drives Safari's <em>File → New … Window</em> menu via macOS automation, which requires Accessibility access.</p>
+    <p>After granting it, you must <strong>quit and reopen</strong> the app — macOS only applies Accessibility on a fresh launch.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>Why don't my Safari profiles show up?</h2>
+    <p>Safari profile names are read from a protected system database. Grant <strong>Full Disk Access</strong> in System Settings, or open Safari and use <strong>Scan Safari Profiles</strong> in Settings → Browsers.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>My Chrome / Firefox profiles are missing.</h2>
+    <p>Make sure the browser is installed, then click <strong>Refresh Profiles</strong> from the menu bar. Firefox profile names come from your Firefox profile groups; Chrome profiles come from Chrome's local state.</p>
+  </div>
+
+  <div class="faq-item">
+    <h2>The app icon looks blank.</h2>
+    <p>macOS aggressively caches app icons. Quit the app and reopen it; if it persists, log out and back in to refresh the system icon cache.</p>
+  </div>
+
+  <footer>
+    Need more help? Email <a href="mailto:mertizci@gmail.com">mertizci@gmail.com</a>.
+  </footer>
+</body>
+</html>
