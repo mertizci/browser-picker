@@ -58,6 +58,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
             AppState.shared.refreshDefaultBrowserStatus()
+
+            // Surface the "Updated to X" popup if we just self-updated, then
+            // silently check GitHub for a newer release on every launch.
+            UpdateController.shared.consumePostUpdateNoticeIfNeeded()
+            UpdateController.shared.checkForUpdates(silent: true)
         }
     }
 
@@ -79,6 +84,7 @@ struct BrowserPickerApp: App {
     @StateObject private var appState = AppState.shared
     @StateObject private var urlRouter = URLRouter.shared
     @StateObject private var permissionMonitor = PermissionMonitor.shared
+    @StateObject private var updateController = UpdateController.shared
 
     var body: some Scene {
         MenuBarExtra {
@@ -87,6 +93,7 @@ struct BrowserPickerApp: App {
                 .environmentObject(appState)
                 .environmentObject(urlRouter)
                 .environmentObject(permissionMonitor)
+                .environmentObject(updateController)
         } label: {
             Image(systemName: "arrow.triangle.branch")
         }
