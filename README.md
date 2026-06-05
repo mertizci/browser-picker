@@ -1,4 +1,15 @@
+<p align="center">
+<img src="https://raw.githubusercontent.com/mertizci/browser-picker/refs/heads/main/BrowserPicker/Assets.xcassets/AppIcon.appiconset/AppIcon-128.png" width="128" />
+</p>
+
+
 # Browser Picker
+
+<a href="https://www.paypal.com/donate/?hosted_button_id=8BKTHWAHUPWPG">
+<img src="https://img.shields.io/badge/Donate-PayPal-blue.svg?logo=paypal" alt="Donate via PayPal" />
+</a>
+
+
 
 A native macOS menu bar app that acts as your **default browser** and routes every link to the right browser and profile — automatically with rules, or with a quick picker.
 
