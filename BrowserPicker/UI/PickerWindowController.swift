@@ -17,15 +17,11 @@ final class PickerWindowController: NSObject, NSWindowDelegate {
                 .environmentObject(settingsStore)
                 .environmentObject(urlRouter)
         )
-        // Let the window track the SwiftUI content's intrinsic size so it never
-        // leaves empty space below the profile list.
-        hosting.sizingOptions = [.preferredContentSize]
 
         if window == nil {
             let newWindow = NSWindow(contentViewController: hosting)
             newWindow.title = "Choose Browser"
             newWindow.styleMask = [.titled, .closable, .fullSizeContentView]
-            newWindow.center()
             newWindow.delegate = self
             newWindow.isReleasedWhenClosed = false
             window = newWindow
@@ -33,8 +29,18 @@ final class PickerWindowController: NSObject, NSWindowDelegate {
             window?.contentViewController = hosting
         }
 
-        window?.makeKeyAndOrderFront(nil)
+        // Size the window once to fit the SwiftUI content (the view has a fixed
+        // width and an intrinsic, bounded height). Doing this explicitly — rather
+        // than via NSHostingController.preferredContentSize — avoids a crash where
+        // AppKit reframes the window from constraints during the display cycle.
+        hosting.view.layoutSubtreeIfNeeded()
+        let fitting = hosting.view.fittingSize
+        if fitting.width > 0, fitting.height > 0 {
+            window?.setContentSize(fitting)
+        }
+
         window?.center()
+        window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
