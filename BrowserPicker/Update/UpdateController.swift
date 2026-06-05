@@ -78,7 +78,9 @@ final class UpdateController: ObservableObject {
                     return
                 }
 
-                if latest > current {
+                // An update is only offered when BOTH a newer version exists
+                // AND that release ships a downloadable .dmg asset.
+                if latest > current, service.dmgAsset(in: release) != nil {
                     state = .available(release)
                     UpdaterWindowController.shared.show()
                 } else {

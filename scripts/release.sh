@@ -105,8 +105,10 @@ if ! command -v create-dmg >/dev/null 2>&1; then
 fi
 # create-dmg returns non-zero if it can't bless/codesign internally; tolerate
 # that as long as the DMG file is produced.
+DMG_BACKGROUND="$ROOT/scripts/dmg-background.tiff"
 create-dmg \
   --volname "$VOLNAME" \
+  --background "$DMG_BACKGROUND" \
   --window-pos 200 120 \
   --window-size 640 400 \
   --icon-size 128 \
