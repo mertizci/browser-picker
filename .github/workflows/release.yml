@@ -25,8 +25,8 @@ jobs:
           sudo xcode-select -s "$XCODE"
           xcodebuild -version
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
+      - name: Install build tools
+        run: brew install xcodegen create-dmg
 
       - name: Import Developer ID certificate
         env:
@@ -63,12 +63,13 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           scripts/release.sh "$VERSION"
 
-      - name: Attach ZIP to the GitHub Release
+      - name: Attach ZIP + DMG to the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "$GITHUB_REF_NAME" \
-            "${{ steps.release.outputs.zip_path }}" --clobber
+            "${{ steps.release.outputs.zip_path }}" \
+            "${{ steps.release.outputs.dmg_path }}" --clobber
 
       - name: Bump Homebrew cask in tap
         env:

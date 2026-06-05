@@ -26,6 +26,25 @@ BUILD_DIR="$ROOT/build/release"
 EXPORT_DIR="$BUILD_DIR/export"
 ARCHIVE="$BUILD_DIR/BrowserPicker.xcarchive"
 ZIP_PATH="$ROOT/build/BrowserPicker-$VERSION.zip"
+DMG_PATH="$ROOT/build/BrowserPicker-$VERSION.dmg"
+VOLNAME="Browser Picker"
+
+# Submit a file to Apple's notary service and wait. Credentials come from env
+# (CI) or a stored Keychain profile (local dev).
+notarize() {
+  local file="$1"
+  if [[ -n "${APPLE_ID:-}" && -n "${APPLE_APP_PASSWORD:-}" && -n "${APPLE_TEAM_ID:-}" ]]; then
+    xcrun notarytool submit "$file" \
+      --apple-id "$APPLE_ID" \
+      --password "$APPLE_APP_PASSWORD" \
+      --team-id "$APPLE_TEAM_ID" \
+      --wait
+  else
+    xcrun notarytool submit "$file" \
+      --keychain-profile "$NOTARY_PROFILE" \
+      --wait
+  fi
+}
 
 echo "==> Resolving Developer ID Application identity"
 # Allow overriding via SIGN_IDENTITY (e.g. in CI); otherwise auto-detect.
@@ -68,34 +87,54 @@ mkdir -p "$ROOT/build"
 rm -f "$ZIP_PATH"
 ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
 
-echo "==> Submitting to Apple notary service"
-# Notarization credentials: prefer explicit env vars (CI), else a stored
-# Keychain profile (local dev).
-if [[ -n "${APPLE_ID:-}" && -n "${APPLE_APP_PASSWORD:-}" && -n "${APPLE_TEAM_ID:-}" ]]; then
-  echo "    Using Apple ID credentials from environment"
-  xcrun notarytool submit "$ZIP_PATH" \
-    --apple-id "$APPLE_ID" \
-    --password "$APPLE_APP_PASSWORD" \
-    --team-id "$APPLE_TEAM_ID" \
-    --wait
-else
-  echo "    Using Keychain profile: $NOTARY_PROFILE"
-  xcrun notarytool submit "$ZIP_PATH" \
-    --keychain-profile "$NOTARY_PROFILE" \
-    --wait
-fi
+echo "==> Submitting app to Apple notary service"
+notarize "$ZIP_PATH"
 
-echo "==> Stapling notarization ticket"
+echo "==> Stapling notarization ticket to the app"
 xcrun stapler staple "$APP_PATH"
 
-echo "==> Re-zipping stapled app"
+echo "==> Re-zipping stapled app (Homebrew cask artifact)"
 rm -f "$ZIP_PATH"
 ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
+
+echo "==> Building DMG (drag-to-Applications installer)"
+rm -f "$DMG_PATH"
+if ! command -v create-dmg >/dev/null 2>&1; then
+  echo "ERROR: create-dmg not found. Install it with: brew install create-dmg" >&2
+  exit 1
+fi
+# create-dmg returns non-zero if it can't bless/codesign internally; tolerate
+# that as long as the DMG file is produced.
+create-dmg \
+  --volname "$VOLNAME" \
+  --window-pos 200 120 \
+  --window-size 640 400 \
+  --icon-size 128 \
+  --icon "$APP_NAME" 170 190 \
+  --hide-extension "$APP_NAME" \
+  --app-drop-link 470 190 \
+  --no-internet-enable \
+  "$DMG_PATH" \
+  "$EXPORT_DIR" || true
+if [[ ! -f "$DMG_PATH" ]]; then
+  echo "ERROR: DMG was not created." >&2
+  exit 1
+fi
+
+echo "==> Signing DMG"
+codesign --force --sign "$DEV_ID" --timestamp "$DMG_PATH"
+
+echo "==> Submitting DMG to Apple notary service"
+notarize "$DMG_PATH"
+
+echo "==> Stapling notarization ticket to the DMG"
+xcrun stapler staple "$DMG_PATH"
 
 echo "==> Final Gatekeeper assessment"
 spctl --assess --type execute --verbose=4 "$APP_PATH" || true
 
 SHA=$(shasum -a 256 "$ZIP_PATH" | awk '{print $1}')
+DMG_SHA=$(shasum -a 256 "$DMG_PATH" | awk '{print $1}')
 
 # Expose outputs for CI consumers.
 echo "$SHA" > "$ROOT/build/BrowserPicker-$VERSION.sha256"
@@ -104,18 +143,22 @@ if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
     echo "version=$VERSION"
     echo "sha256=$SHA"
     echo "zip_path=$ZIP_PATH"
+    echo "dmg_path=$DMG_PATH"
+    echo "dmg_sha256=$DMG_SHA"
   } >> "$GITHUB_OUTPUT"
 fi
 
 echo ""
 echo "============================================================"
-echo " Release artifact ready"
-echo "   File:    $ZIP_PATH"
-echo "   Version: $VERSION"
+echo " Release artifacts ready"
+echo "   ZIP:     $ZIP_PATH"
 echo "   sha256:  $SHA"
+echo "   DMG:     $DMG_PATH"
+echo "   sha256:  $DMG_SHA"
+echo "   Version: $VERSION"
 echo "============================================================"
 echo ""
 echo "Next steps:"
-echo "  1. Create a GitHub release tagged v$VERSION and upload the ZIP."
-echo "  2. Update Casks/browser-picker.rb with version $VERSION and the sha256 above."
+echo "  1. Create a GitHub release tagged v$VERSION; upload the ZIP and DMG."
+echo "  2. Update Casks/browser-picker.rb with version $VERSION and the ZIP sha256."
 echo "  3. Push your tap so users can: brew install --cask mertizci/tap/browser-picker"

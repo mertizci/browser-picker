@@ -11,3 +11,6 @@ xcuserdata/
 
 # Local signing override (keeps your certificate out of the repo)
 *.local.xcconfig
+
+# Private maintainer release/signing notes (contains identities & secret workflow)
+RELEASE.md

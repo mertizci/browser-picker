@@ -2,15 +2,27 @@
 
 A native macOS menu bar app that acts as your **default browser** and routes every link to the right browser and profile — automatically with rules, or with a quick picker.
 
+## Install
+
+**Homebrew (recommended):**
+
+```bash
+brew install --cask mertizci/tap/browser-picker
+```
+
+**Manual:** download `BrowserPicker-X.Y.Z.dmg` from the [latest release](https://github.com/mertizci/browser-picker/releases/latest), open it, and drag **Browser Picker** into **Applications**.
+
+Both the app and the DMG are signed with a Developer ID certificate and notarized by Apple, so they open without Gatekeeper warnings.
+
 ## Features
 
-- **Menu bar control** — pick the active browser + profile (Chrome, Firefox, Safari) in one click.
+- **Menu bar control** — pick the active browser + profile (Safari, Chrome, Edge, Brave, Vivaldi, Firefox) in one click.
 - **Automatic routing rules** — match links by *URL contains*, *host equals*, or *host suffix*. First match wins; reorder by dragging.
 - **Two fallback modes** when no rule matches:
   - **Silent** — open in your current menu bar selection.
   - **Picker** — prompt for the browser/profile each time.
 - **Profile discovery**
-  - Chrome — from `Local State`.
+  - Chromium browsers (Chrome, Edge, Brave, Vivaldi) — from each browser's `Local State`.
   - Firefox — from `profiles.ini` and Firefox **Profile Groups** (selectable profile names).
   - Safari — from `SafariTabs.db`, with a **menu scan** fallback.
 - **Guided onboarding** that requests and live-tracks the required permissions.
@@ -68,7 +80,7 @@ BrowserPicker/
 ├── BrowserPickerApp.swift           # App entry, AppDelegate, URL handling
 ├── Core/                            # Models, SettingsStore, RuleEngine, URLRouter
 ├── Browsers/
-│   ├── BrowserLauncher.swift        # Chrome/Firefox/Safari dispatch
+│   ├── BrowserLauncher.swift        # Chromium/Firefox/Safari dispatch
 │   ├── SafariLauncher.swift         # AppleScript profile targeting
 │   ├── AutomationPermissionService  # PermissionMonitor (Accessibility + FDA)
 │   └── ProfileDiscovery/            # Per-browser profile discovery
