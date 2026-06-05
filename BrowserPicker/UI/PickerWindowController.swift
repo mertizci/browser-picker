@@ -12,29 +12,29 @@ final class PickerWindowController: NSObject, NSWindowDelegate {
     }
 
     func show(settingsStore: SettingsStore, urlRouter: URLRouter) {
-        if window == nil {
-            let content = PickerPromptView()
+        let hosting = NSHostingController(
+            rootView: PickerPromptView()
                 .environmentObject(settingsStore)
                 .environmentObject(urlRouter)
+        )
+        // Let the window track the SwiftUI content's intrinsic size so it never
+        // leaves empty space below the profile list.
+        hosting.sizingOptions = [.preferredContentSize]
 
-            let hosting = NSHostingController(rootView: content)
+        if window == nil {
             let newWindow = NSWindow(contentViewController: hosting)
             newWindow.title = "Choose Browser"
             newWindow.styleMask = [.titled, .closable, .fullSizeContentView]
-            newWindow.setContentSize(NSSize(width: 420, height: 360))
             newWindow.center()
             newWindow.delegate = self
             newWindow.isReleasedWhenClosed = false
             window = newWindow
         } else {
-            window?.contentViewController = NSHostingController(
-                rootView: PickerPromptView()
-                    .environmentObject(settingsStore)
-                    .environmentObject(urlRouter)
-            )
+            window?.contentViewController = hosting
         }
 
         window?.makeKeyAndOrderFront(nil)
+        window?.center()
         NSApp.activate(ignoringOtherApps: true)
     }
 

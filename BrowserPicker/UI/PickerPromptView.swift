@@ -32,6 +32,9 @@ struct PickerPromptView: View {
         }
     }
 
+    /// Show at most this many rows before the list starts scrolling.
+    private let maxVisibleRows = 5
+
     @ViewBuilder
     private func promptContent(for url: URL) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -44,36 +47,7 @@ struct PickerPromptView: View {
                     .lineLimit(2)
             }
 
-            ScrollView {
-                LazyVStack(spacing: 8) {
-                    ForEach(settingsStore.profiles) { profile in
-                        let target = RouteTarget(browser: profile.browser, profileId: profile.id)
-                        Button {
-                            selectedTarget = target
-                            urlRouter.completePickerSelection(url: url, target: target)
-                        } label: {
-                            HStack(spacing: 12) {
-                                ProfileIconView(profile: profile, size: 28)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(profile.displayName)
-                                        .font(.headline)
-                                    Text(profile.browser.displayName)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                if selectedTarget == target {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(Color.accentColor)
-                                }
-                            }
-                            .padding(10)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
+            profileList(for: url)
 
             HStack {
                 Button("Cancel") {
@@ -84,7 +58,55 @@ struct PickerPromptView: View {
             }
         }
         .padding(20)
-        .frame(minWidth: 380, minHeight: 320)
+        .frame(width: 380)
+    }
+
+    /// Grows with the number of profiles, only scrolling once the list would
+    /// exceed `maxVisibleRows` — so a couple of profiles don't leave dead space.
+    @ViewBuilder
+    private func profileList(for url: URL) -> some View {
+        let rows = VStack(spacing: 8) {
+            ForEach(settingsStore.profiles) { profile in
+                profileRow(profile, url: url)
+            }
+        }
+
+        if settingsStore.profiles.count > maxVisibleRows {
+            ScrollView { rows }
+                .frame(height: estimatedRowHeight * CGFloat(maxVisibleRows))
+        } else {
+            rows
+        }
+    }
+
+    private var estimatedRowHeight: CGFloat { 56 }
+
+    @ViewBuilder
+    private func profileRow(_ profile: BrowserProfile, url: URL) -> some View {
+        let target = RouteTarget(browser: profile.browser, profileId: profile.id)
+        Button {
+            selectedTarget = target
+            urlRouter.completePickerSelection(url: url, target: target)
+        } label: {
+            HStack(spacing: 12) {
+                ProfileIconView(profile: profile, size: 28)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(profile.displayName)
+                        .font(.headline)
+                    Text(profile.browser.displayName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if selectedTarget == target {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding(10)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
     }
 
     private func bringWindowToFront() {
