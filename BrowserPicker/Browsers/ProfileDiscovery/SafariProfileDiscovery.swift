@@ -4,7 +4,7 @@ struct SafariProfileDiscovery: ProfileDiscovery {
     let browser: BrowserKind = .safari
 
     func discoverProfiles() -> [BrowserProfile] {
-        guard FileManager.default.fileExists(atPath: browser.appPath) else { return [] }
+        guard browser.isInstalled else { return [] }
 
         var recordsByID: [String: SafariProfileRecord] = [:]
 

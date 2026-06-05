@@ -1,7 +1,17 @@
+import AppKit
 import Foundation
+
+enum BrowserEngine {
+    case chromium
+    case gecko
+    case webkit
+}
 
 enum BrowserKind: String, Codable, CaseIterable, Identifiable {
     case chrome
+    case edge
+    case brave
+    case vivaldi
     case firefox
     case safari
 
@@ -10,27 +20,90 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .chrome: return "Chrome"
+        case .edge: return "Edge"
+        case .brave: return "Brave"
+        case .vivaldi: return "Vivaldi"
         case .firefox: return "Firefox"
         case .safari: return "Safari"
         }
     }
 
-    var appPath: String {
+    var engine: BrowserEngine {
+        switch self {
+        case .chrome, .edge, .brave, .vivaldi: return .chromium
+        case .firefox: return .gecko
+        case .safari: return .webkit
+        }
+    }
+
+    var bundleIdentifier: String {
+        switch self {
+        case .chrome: return "com.google.Chrome"
+        case .edge: return "com.microsoft.edgemac"
+        case .brave: return "com.brave.Browser"
+        case .vivaldi: return "com.vivaldi.Vivaldi"
+        case .firefox: return "org.mozilla.firefox"
+        case .safari: return "com.apple.Safari"
+        }
+    }
+
+    /// Default install location, used as a fallback when bundle-ID lookup fails.
+    private var defaultAppPath: String {
         switch self {
         case .chrome: return "/Applications/Google Chrome.app"
+        case .edge: return "/Applications/Microsoft Edge.app"
+        case .brave: return "/Applications/Brave Browser.app"
+        case .vivaldi: return "/Applications/Vivaldi.app"
         case .firefox: return "/Applications/Firefox.app"
         case .safari: return "/Applications/Safari.app"
         }
     }
 
+    /// Resolves the installed app URL by bundle identifier (any location), else the default path.
+    var installedAppURL: URL? {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            return url
+        }
+        if FileManager.default.fileExists(atPath: defaultAppPath) {
+            return URL(fileURLWithPath: defaultAppPath)
+        }
+        return nil
+    }
+
+    var isInstalled: Bool { installedAppURL != nil }
+
+    var appPath: String {
+        installedAppURL?.path ?? defaultAppPath
+    }
+
+    /// Absolute path to the launchable executable inside the resolved app bundle.
     var executablePath: String {
+        if let appURL = installedAppURL,
+           let executableURL = Bundle(url: appURL)?.executableURL {
+            return executableURL.path
+        }
+        return "\(defaultAppPath)/Contents/MacOS/\(defaultExecutableName)"
+    }
+
+    private var defaultExecutableName: String {
         switch self {
-        case .chrome:
-            return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-        case .firefox:
-            return "/Applications/Firefox.app/Contents/MacOS/firefox"
-        case .safari:
-            return "/Applications/Safari.app/Contents/MacOS/Safari"
+        case .chrome: return "Google Chrome"
+        case .edge: return "Microsoft Edge"
+        case .brave: return "Brave Browser"
+        case .vivaldi: return "Vivaldi"
+        case .firefox: return "firefox"
+        case .safari: return "Safari"
+        }
+    }
+
+    /// Path (relative to `~/Library/Application Support`) of the Chromium "Local State" file.
+    var chromiumLocalStateRelativePath: String? {
+        switch self {
+        case .chrome: return "Google/Chrome/Local State"
+        case .edge: return "Microsoft Edge/Local State"
+        case .brave: return "BraveSoftware/Brave-Browser/Local State"
+        case .vivaldi: return "Vivaldi/Local State"
+        case .firefox, .safari: return nil
         }
     }
 }

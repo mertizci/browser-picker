@@ -25,7 +25,7 @@ struct FirefoxProfileDiscovery: ProfileDiscovery {
     }
 
     func discoverProfiles() -> [BrowserProfile] {
-        guard FileManager.default.fileExists(atPath: browser.appPath) else { return [] }
+        guard browser.isInstalled else { return [] }
 
         let selectableNames = FirefoxProfileGroupReader.selectableProfileNames()
         let iniEntries = parseProfilesIni()

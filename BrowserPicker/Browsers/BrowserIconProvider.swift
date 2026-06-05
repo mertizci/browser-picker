@@ -3,8 +3,8 @@ import SwiftUI
 
 enum BrowserIconProvider {
     static func icon(for browser: BrowserKind, size: CGFloat = 20) -> NSImage {
-        if FileManager.default.fileExists(atPath: browser.appPath) {
-            let image = NSWorkspace.shared.icon(forFile: browser.appPath)
+        if let appURL = browser.installedAppURL {
+            let image = NSWorkspace.shared.icon(forFile: appURL.path)
             image.size = NSSize(width: size, height: size)
             return image
         }
@@ -22,7 +22,7 @@ enum BrowserIconProvider {
 
         let symbolName: String
         switch browser {
-        case .chrome: symbolName = "globe"
+        case .chrome, .edge, .brave, .vivaldi: symbolName = "globe"
         case .firefox: symbolName = "flame"
         case .safari: symbolName = "safari"
         }

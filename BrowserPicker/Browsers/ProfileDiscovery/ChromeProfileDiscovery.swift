@@ -1,23 +1,25 @@
 import Foundation
 
-struct ChromeProfileDiscovery: ProfileDiscovery {
-    let browser: BrowserKind = .chrome
+/// Discovers profiles for any Chromium-based browser (Chrome, Edge, Brave, Vivaldi)
+/// by reading the browser's `Local State` JSON.
+struct ChromiumProfileDiscovery: ProfileDiscovery {
+    let browser: BrowserKind
 
-    private var localStateURL: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/Google/Chrome/Local State")
+    private var localStateURL: URL? {
+        guard let relativePath = browser.chromiumLocalStateRelativePath else { return nil }
+        return FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/\(relativePath)")
     }
 
     func discoverProfiles() -> [BrowserProfile] {
-        guard FileManager.default.fileExists(atPath: browser.appPath),
+        guard browser.isInstalled else { return [] }
+
+        guard let localStateURL,
               let data = try? Data(contentsOf: localStateURL),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let profile = json["profile"] as? [String: Any],
               let infoCache = profile["info_cache"] as? [String: Any] else {
-            if FileManager.default.fileExists(atPath: browser.appPath) {
-                return [BrowserProfile.defaultProfile(for: .chrome)]
-            }
-            return []
+            return [BrowserProfile.defaultProfile(for: browser)]
         }
 
         return infoCache.keys.sorted().map { key in
@@ -26,7 +28,7 @@ struct ChromeProfileDiscovery: ProfileDiscovery {
             return BrowserProfile(
                 id: key,
                 displayName: name,
-                browser: .chrome,
+                browser: browser,
                 profilePath: key,
                 internalName: nil
             )

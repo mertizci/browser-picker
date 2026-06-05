@@ -3,21 +3,21 @@ import Foundation
 
 struct BrowserLauncher {
     func open(url: URL, profile: BrowserProfile) async throws {
-        guard FileManager.default.fileExists(atPath: profile.browser.appPath) else {
+        guard profile.browser.isInstalled else {
             throw BrowserPickerError.browserNotInstalled(profile.browser)
         }
 
-        switch profile.browser {
-        case .chrome:
-            try launchChrome(url: url, profile: profile)
-        case .firefox:
+        switch profile.browser.engine {
+        case .chromium:
+            try launchChromium(url: url, profile: profile)
+        case .gecko:
             try launchFirefox(url: url, profile: profile)
-        case .safari:
+        case .webkit:
             try SafariLauncher().open(url: url, profile: profile)
         }
     }
 
-    private func launchChrome(url: URL, profile: BrowserProfile) throws {
+    private func launchChromium(url: URL, profile: BrowserProfile) throws {
         let directory = profile.profilePath ?? "Default"
         let process = Process()
         process.executableURL = URL(fileURLWithPath: profile.browser.executablePath)
