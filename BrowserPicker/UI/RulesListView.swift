@@ -167,20 +167,24 @@ private struct RuleCardView: View {
 
             Spacer(minLength: 8)
 
-            if isHovered {
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.red)
-                        .frame(width: 28, height: 28)
-                        .background(Color.red.opacity(0.08), in: Circle())
+            HStack(spacing: 8) {
+                if isHovered {
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.red)
+                            .frame(width: 28, height: 28)
+                            .background(Color.red.opacity(0.08), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete rule")
                 }
-                .buttonStyle(.plain)
-                .help("Delete rule")
-            } else {
+
                 Image(systemName: "line.3.horizontal")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
+                    .frame(width: 20)
+                    .help("Drag to reorder")
             }
         }
         .padding(14)
