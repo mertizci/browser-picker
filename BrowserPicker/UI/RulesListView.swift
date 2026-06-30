@@ -130,62 +130,67 @@ private struct RuleCardView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(Color.accentColor.opacity(0.12))
-                    .frame(width: 30, height: 30)
-                Text("\(priority)")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Color.accentColor)
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text(rule.name)
-                        .font(.body.weight(.semibold))
-                    if !rule.enabled {
-                        Text("Disabled")
-                            .font(.caption2.weight(.medium))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.secondary)
+            Button(action: onEdit) {
+                HStack(alignment: .center, spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.accentColor.opacity(0.12))
+                            .frame(width: 30, height: 30)
+                        Text("\(priority)")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(Color.accentColor)
                     }
-                }
 
-                HStack(spacing: 6) {
-                    Image(systemName: matcherIcon)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("\(rule.matcher.kind.displayName): \(rule.matcher.value)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 8) {
+                            Text(rule.name)
+                                .font(.body.weight(.semibold))
+                            if !rule.enabled {
+                                Text("Disabled")
+                                    .font(.caption2.weight(.medium))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.secondary.opacity(0.15), in: Capsule())
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
 
-                destinationRow
-            }
+                        HStack(spacing: 6) {
+                            Image(systemName: matcherIcon)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("\(rule.matcher.kind.displayName): \(rule.matcher.value)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
 
-            Spacer(minLength: 8)
-
-            HStack(spacing: 8) {
-                if isHovered {
-                    Button(action: onDelete) {
-                        Image(systemName: "trash")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.red)
-                            .frame(width: 28, height: 28)
-                            .background(Color.red.opacity(0.08), in: Circle())
+                        destinationRow
                     }
-                    .buttonStyle(.plain)
-                    .help("Delete rule")
-                }
 
-                Image(systemName: "line.3.horizontal")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .frame(width: 20)
-                    .help("Drag to reorder")
+                    Spacer(minLength: 8)
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+
+            if isHovered {
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.red)
+                        .frame(width: 28, height: 28)
+                        .background(Color.red.opacity(0.08), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .help("Delete rule")
+            }
+
+            Image(systemName: "line.3.horizontal")
+                .font(.body)
+                .foregroundStyle(.tertiary)
+                .frame(width: 24, height: 28)
+                .contentShape(Rectangle())
+                .help("Drag to reorder")
         }
         .padding(14)
         .background {
@@ -196,8 +201,6 @@ private struct RuleCardView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Color.primary.opacity(isHovered ? 0.12 : 0.07), lineWidth: 1)
         }
-        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .onTapGesture(perform: onEdit)
         .onHover { isHovered = $0 }
     }
 
