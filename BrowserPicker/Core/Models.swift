@@ -7,11 +7,27 @@ enum BrowserEngine {
     case webkit
 }
 
+/// How a browser is told to open a link in one of its profiles. This is not
+/// implied by the rendering engine: Dia renders with Chromium but is a native
+/// app that never sees Chromium's command line.
+enum ProfileLaunchStyle {
+    /// Chromium's `--profile-directory` switch.
+    case chromiumArguments
+    /// Firefox's `--profile` and `-P` switches.
+    case firefoxArguments
+    /// Safari exposes no profile switch, so its windows are driven by AppleScript.
+    case safariAutomation
+    /// Dia drops every command-line argument — including the URL — so it is
+    /// driven by AppleScript as well.
+    case diaAutomation
+}
+
 enum BrowserKind: String, Codable, CaseIterable, Identifiable {
     case chrome
     case edge
     case brave
     case vivaldi
+    case dia
     case firefox
     case safari
 
@@ -23,6 +39,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .edge: return "Edge"
         case .brave: return "Brave"
         case .vivaldi: return "Vivaldi"
+        case .dia: return "Dia"
         case .firefox: return "Firefox"
         case .safari: return "Safari"
         }
@@ -30,9 +47,18 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
 
     var engine: BrowserEngine {
         switch self {
-        case .chrome, .edge, .brave, .vivaldi: return .chromium
+        case .chrome, .edge, .brave, .vivaldi, .dia: return .chromium
         case .firefox: return .gecko
         case .safari: return .webkit
+        }
+    }
+
+    var profileLaunchStyle: ProfileLaunchStyle {
+        switch self {
+        case .chrome, .edge, .brave, .vivaldi: return .chromiumArguments
+        case .dia: return .diaAutomation
+        case .firefox: return .firefoxArguments
+        case .safari: return .safariAutomation
         }
     }
 
@@ -42,6 +68,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .edge: return "com.microsoft.edgemac"
         case .brave: return "com.brave.Browser"
         case .vivaldi: return "com.vivaldi.Vivaldi"
+        case .dia: return "company.thebrowser.dia"
         case .firefox: return "org.mozilla.firefox"
         case .safari: return "com.apple.Safari"
         }
@@ -54,6 +81,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .edge: return "/Applications/Microsoft Edge.app"
         case .brave: return "/Applications/Brave Browser.app"
         case .vivaldi: return "/Applications/Vivaldi.app"
+        case .dia: return "/Applications/Dia.app"
         case .firefox: return "/Applications/Firefox.app"
         case .safari: return "/Applications/Safari.app"
         }
@@ -91,6 +119,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .edge: return "Microsoft Edge"
         case .brave: return "Brave Browser"
         case .vivaldi: return "Vivaldi"
+        case .dia: return "Dia"
         case .firefox: return "firefox"
         case .safari: return "Safari"
         }
@@ -103,6 +132,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .edge: return "Microsoft Edge/Local State"
         case .brave: return "BraveSoftware/Brave-Browser/Local State"
         case .vivaldi: return "Vivaldi/Local State"
+        case .dia: return "Dia/User Data/Local State"
         case .firefox, .safari: return nil
         }
     }

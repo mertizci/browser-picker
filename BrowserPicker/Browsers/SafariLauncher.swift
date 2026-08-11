@@ -12,21 +12,10 @@ struct SafariLauncher {
             isDefault: isDefault
         )
 
-        let process = Process()
-        let errorPipe = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", script]
-        process.standardError = errorPipe
-
-        try process.run()
-        process.waitUntilExit()
-
-        guard process.terminationStatus == 0 else {
-            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-            let message = String(data: errorData, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            throw BrowserPickerError.launchFailed(message?.isEmpty == false ? message! : "Safari automation failed. Grant Accessibility access in System Settings.")
-        }
+        try AppleScriptRunner.run(
+            script,
+            fallbackMessage: "Safari automation failed. Grant Accessibility access in System Settings."
+        )
     }
 
     private func appleScript(
@@ -35,9 +24,9 @@ struct SafariLauncher {
         otherProfileNames: [String],
         isDefault: Bool
     ) -> String {
-        let escapedURL = escapeAppleScript(urlString)
-        let escapedMenuName = escapeAppleScript(menuName)
-        let otherPrefixList = appleScriptList(otherProfileNames.map { "\($0) — " })
+        let escapedURL = AppleScriptRunner.escaped(urlString)
+        let escapedMenuName = AppleScriptRunner.escaped(menuName)
+        let otherPrefixList = AppleScriptRunner.list(otherProfileNames.map { "\($0) — " })
         let isDefaultLiteral = isDefault ? "true" : "false"
 
         return """
@@ -162,19 +151,5 @@ struct SafariLauncher {
             end tell
         end run
         """
-    }
-
-    private func appleScriptList(_ values: [String]) -> String {
-        guard !values.isEmpty else { return "{}" }
-        let items = values
-            .map { "\"\(escapeAppleScript($0))\"" }
-            .joined(separator: ", ")
-        return "{\(items)}"
-    }
-
-    private func escapeAppleScript(_ value: String) -> String {
-        value
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
     }
 }

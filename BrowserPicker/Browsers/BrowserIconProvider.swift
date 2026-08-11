@@ -22,7 +22,7 @@ enum BrowserIconProvider {
 
         let symbolName: String
         switch browser {
-        case .chrome, .edge, .brave, .vivaldi: symbolName = "globe"
+        case .chrome, .edge, .brave, .vivaldi, .dia: symbolName = "globe"
         case .firefox: symbolName = "flame"
         case .safari: symbolName = "safari"
         }

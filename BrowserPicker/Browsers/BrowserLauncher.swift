@@ -2,18 +2,22 @@ import AppKit
 import Foundation
 
 struct BrowserLauncher {
-    func open(url: URL, profile: BrowserProfile, safariProfileNames: [String] = []) async throws {
+    /// - Parameter siblingProfileNames: every profile name of `profile`'s
+    ///   browser, which browsers driven by automation need to tell profiles apart.
+    func open(url: URL, profile: BrowserProfile, siblingProfileNames: [String] = []) async throws {
         guard profile.browser.isInstalled else {
             throw BrowserPickerError.browserNotInstalled(profile.browser)
         }
 
-        switch profile.browser.engine {
-        case .chromium:
+        switch profile.browser.profileLaunchStyle {
+        case .chromiumArguments:
             try launchChromium(url: url, profile: profile)
-        case .gecko:
+        case .firefoxArguments:
             try launchFirefox(url: url, profile: profile)
-        case .webkit:
-            try SafariLauncher().open(url: url, profile: profile, allProfileNames: safariProfileNames)
+        case .safariAutomation:
+            try SafariLauncher().open(url: url, profile: profile, allProfileNames: siblingProfileNames)
+        case .diaAutomation:
+            try DiaLauncher().open(url: url, profile: profile, allProfileNames: siblingProfileNames)
         }
     }
 

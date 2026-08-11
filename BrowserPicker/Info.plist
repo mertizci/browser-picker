@@ -70,6 +70,6 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Browser Picker</string>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Browser Picker opens links in the correct Safari profile using automation.</string>
+	<string>Browser Picker opens links in the correct Safari and Dia profile using automation.</string>
 </dict>
 </plist>

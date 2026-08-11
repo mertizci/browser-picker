@@ -41,15 +41,16 @@ brew install --cask mertizci/tap/browser-picker
 ## Features
 
 - 🎯 **Browser + profile routing** — not just "open in Chrome", but "open in Chrome → *Work*" or "Firefox → *Client A*". Each link lands in the right account, ready to go.
-- 🧭 **Menu bar control** — pick the active browser + profile (Safari, Chrome, Edge, Brave, Vivaldi, Firefox) in one click.
+- 🧭 **Menu bar control** — pick the active browser + profile (Safari, Chrome, Edge, Brave, Vivaldi, Dia, Firefox) in one click.
 - 🔀 **Automatic routing rules** — match links by *URL contains*, *host equals*, or *host suffix*. First match wins; reorder by dragging.
 - 🪃 **Two fallback modes** when no rule matches:
   - **Silent** — open in your current menu bar selection.
   - **Picker** — prompt for the browser/profile each time.
 - 👤 **Profile discovery**
-  - Chromium browsers (Chrome, Edge, Brave, Vivaldi) — from each browser's `Local State`.
+  - Chromium browsers (Chrome, Edge, Brave, Vivaldi, Dia) — from each browser's `Local State`.
   - Firefox — from `profiles.ini` and Firefox **Profile Groups** (selectable profile names).
   - Safari — from `SafariTabs.db`, with a **menu scan** fallback.
+  - Dia ignores command-line arguments, so links are handed to it by automation: an existing window of the target profile is reused, otherwise the link is moved into that profile.
 - 🧑‍🏫 **Guided onboarding** that requests and live-tracks the required permissions.
 - ✨ **Polished UI** — window-style menu bar popover, redesigned Settings, rule editor with live preview, built-in **FAQ** and **About**.
 - 🖼️ Native browser icons from installed apps, with Simple Icons SVG fallback.
@@ -58,7 +59,7 @@ brew install --cask mertizci/tap/browser-picker
 
 | Permission | Why it's needed |
 | --- | --- |
-| **Accessibility** | Drive Safari's *File → New … Window* menu to open links in a specific Safari profile. |
+| **Accessibility** | Drive Safari's *File → New … Window* menu, and Dia's profile menu, to open links in a specific profile. |
 | **Full Disk Access** | Read Safari profile names from the protected `SafariTabs.db`. |
 
 On first launch an onboarding window walks you through both. After granting **Accessibility**, **quit and reopen** the app — macOS only applies that permission on a fresh launch.

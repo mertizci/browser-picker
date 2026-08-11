@@ -18,7 +18,7 @@ enum SafariMenuProfileScanner {
     /// Reads profile names from Safari's menu. Does not launch Safari.
     static func discoverProfiles() -> [SafariProfileRecord] {
         guard SafariRuntime.isRunning else { return [] }
-        guard let output = runOSA(script), !output.isEmpty else { return [] }
+        guard let output = AppleScriptRunner.output(of: script), !output.isEmpty else { return [] }
 
         // The File menu can contain several submenu-bearing items (New Window,
         // New Tab, Open Recent, Share …). "New Window" — the profile list — is
@@ -125,26 +125,5 @@ enum SafariMenuProfileScanner {
         names
             .map { SafariProfileRecord(id: $0, displayName: $0, menuName: $0) }
             .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
-    }
-
-    private static func runOSA(_ source: String) -> String? {
-        let process = Process()
-        let pipe = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", source]
-        process.standardOutput = pipe
-        process.standardError = Pipe()
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            return nil
-        }
-
-        guard process.terminationStatus == 0 else { return nil }
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        return String(data: data, encoding: .utf8)?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
