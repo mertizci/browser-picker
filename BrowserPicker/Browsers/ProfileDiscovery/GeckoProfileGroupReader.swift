@@ -1,14 +1,18 @@
 import Foundation
 import SQLite3
 
-enum FirefoxProfileGroupReader {
-    private static var profileGroupsDirectory: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/Firefox/Profile Groups")
+/// Reads the user-visible profile names that Gecko browsers (Firefox, Zen)
+/// keep in their "Profile Groups" databases, which `profiles.ini` does not know
+/// about.
+struct GeckoProfileGroupReader {
+    let supportDirectory: URL
+
+    private var profileGroupsDirectory: URL {
+        supportDirectory.appendingPathComponent("Profile Groups")
     }
 
     /// Maps relative profile paths (e.g. `Profiles/foo.default-release`) to user-visible names.
-    static func selectableProfileNames() -> [String: String] {
+    func selectableProfileNames() -> [String: String] {
         guard let files = try? FileManager.default.contentsOfDirectory(
             at: profileGroupsDirectory,
             includingPropertiesForKeys: nil,
@@ -17,15 +21,14 @@ enum FirefoxProfileGroupReader {
 
         var names: [String: String] = [:]
         for file in files where file.pathExtension == "sqlite" {
-            let fromDatabase = readNames(from: file.path)
-            for (path, name) in fromDatabase where names[path] == nil {
+            for (path, name) in readNames(from: file.path) where names[path] == nil {
                 names[path] = name
             }
         }
         return names
     }
 
-    private static func readNames(from databasePath: String) -> [String: String] {
+    private func readNames(from databasePath: String) -> [String: String] {
         var database: OpaquePointer?
         guard sqlite3_open_v2(databasePath, &database, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
               let database else { return [:] }
@@ -41,9 +44,7 @@ enum FirefoxProfileGroupReader {
         while sqlite3_step(statement) == SQLITE_ROW {
             guard let pathPointer = sqlite3_column_text(statement, 0),
                   let namePointer = sqlite3_column_text(statement, 1) else { continue }
-            let path = String(cString: pathPointer)
-            let name = String(cString: namePointer)
-            names[path] = name
+            names[String(cString: pathPointer)] = String(cString: namePointer)
         }
         return names
     }

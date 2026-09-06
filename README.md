@@ -41,16 +41,20 @@ brew install --cask mertizci/tap/browser-picker
 ## Features
 
 - 🎯 **Browser + profile routing** — not just "open in Chrome", but "open in Chrome → *Work*" or "Firefox → *Client A*". Each link lands in the right account, ready to go.
-- 🧭 **Menu bar control** — pick the active browser + profile (Safari, Chrome, Edge, Brave, Vivaldi, Dia, Firefox) in one click.
+- 🧭 **Menu bar control** — pick the active browser + profile (Safari, Chrome, Edge, Brave, Vivaldi, Dia, Firefox, Zen) in one click.
+- 🗂️ **Zen spaces** — Zen routes one level deeper, listed the way Zen nests it: spaces grouped under the container Zen calls their *Profile*. Send a link to one space, or leave it in whichever space is open.
 - 🔀 **Automatic routing rules** — match links by *URL contains*, *host equals*, or *host suffix*. First match wins; reorder by dragging.
 - 🪃 **Two fallback modes** when no rule matches:
   - **Silent** — open in your current menu bar selection.
   - **Picker** — prompt for the browser/profile each time.
 - 👤 **Profile discovery**
   - Chromium browsers (Chrome, Edge, Brave, Vivaldi, Dia) — from each browser's `Local State`.
-  - Firefox — from `profiles.ini` and Firefox **Profile Groups** (selectable profile names).
+  - Gecko browsers (Firefox, Zen) — from `profiles.ini` and **Profile Groups** (selectable profile names).
   - Safari — from `SafariTabs.db`, with a **menu scan** fallback.
+  - Zen spaces — from the profile's `zen-sessions.jsonlz4` session file.
   - Dia ignores command-line arguments, so links are handed to it by automation: an existing window of the target profile is reused, otherwise the link is moved into that profile.
+  - Zen spaces exist only in a running window, so a space-bound link switches Zen to that space through its Spaces menu and is handed over afterwards. Spaces are picked by name, so two spaces sharing a name are indistinguishable — rename one in Zen.
+  - Zen's space settings label a space's container (*Personal*, *Work*, …) its "Profile", so containers are the heading a space is listed under — routing to a space lands in that container too. A container with no space of its own is left out, since a link can only be sent to a space. Running two Zen profiles side by side is a Gecko limitation: links then follow the instance that answers, as they do with Firefox.
 - 🧑‍🏫 **Guided onboarding** that requests and live-tracks the required permissions.
 - ✨ **Polished UI** — window-style menu bar popover, redesigned Settings, rule editor with live preview, built-in **FAQ** and **About**.
 - 🖼️ Native browser icons from installed apps, with Simple Icons SVG fallback.
@@ -59,7 +63,7 @@ brew install --cask mertizci/tap/browser-picker
 
 | Permission | Why it's needed |
 | --- | --- |
-| **Accessibility** | Drive Safari's *File → New … Window* menu, and Dia's profile menu, to open links in a specific profile. |
+| **Accessibility** | Drive Safari's *File → New … Window* menu, Dia's profile menu, and Zen's *Spaces* menu, to open links in a specific profile or space. |
 | **Full Disk Access** | Read Safari profile names from the protected `SafariTabs.db`. |
 
 On first launch an onboarding window walks you through both. After granting **Accessibility**, **quit and reopen** the app — macOS only applies that permission on a fresh launch.
@@ -112,8 +116,9 @@ BrowserPicker/
 ├── BrowserPickerApp.swift           # App entry, AppDelegate, URL handling
 ├── Core/                            # Models, SettingsStore, RuleEngine, URLRouter
 ├── Browsers/
-│   ├── BrowserLauncher.swift        # Chromium/Firefox/Safari dispatch
+│   ├── BrowserLauncher.swift        # Chromium/Gecko/Safari/Dia/Zen dispatch
 │   ├── SafariLauncher.swift         # AppleScript profile targeting
+│   ├── ZenLauncher.swift            # Gecko profile launch + space switching
 │   ├── AutomationPermissionService  # PermissionMonitor (Accessibility + FDA)
 │   └── ProfileDiscovery/            # Per-browser profile discovery
 ├── UI/                              # Menu bar, Settings, Rules, Onboarding, FAQ, About
@@ -131,6 +136,7 @@ open "https://example.com"
 
 - **Accessibility shows "not granted" after granting** — quit and reopen the app (use *Quit & Reopen*); macOS applies it only on a fresh launch.
 - **Safari profiles missing** — grant Full Disk Access, or open Safari and use *Scan Safari Profiles* in Settings → Browsers.
+- **Zen spaces missing** — Zen writes its session file while running; open the profile in Zen once, then use *Refresh Profiles*.
 - **App icon looks blank** — quit/reopen; if it persists, log out and back in to clear the macOS icon cache.
 
 ## Contact

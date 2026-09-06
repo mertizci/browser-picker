@@ -11,6 +11,18 @@ struct MenuBarContentView: View {
         settingsStore.profile(for: settingsStore.settings.defaultTarget)
     }
 
+    private var activeSpace: BrowserSpace? {
+        activeProfile?.space(id: settingsStore.settings.defaultTarget.spaceId)
+    }
+
+    /// The active profile, or — once a space is targeted — that space under its
+    /// container, the way the menus below nest them.
+    private var activeProfileLabel: String? {
+        guard let activeProfile else { return nil }
+        guard let activeSpace else { return activeProfile.displayName }
+        return activeSpace.nestedLabel
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
@@ -70,7 +82,7 @@ struct MenuBarContentView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(activeProfile?.displayName ?? "Browser Picker")
+                Text(activeProfileLabel ?? "Browser Picker")
                     .font(.system(size: 14, weight: .semibold))
                     .lineLimit(1)
                 Text(activeProfile.map { "\($0.browser.displayName) · active" } ?? "No profile selected")
@@ -107,18 +119,17 @@ struct MenuBarContentView: View {
         ForEach(BrowserKind.allCases) { browser in
             let profiles = settingsStore.profiles(for: browser)
             if !profiles.isEmpty {
+                let groups = RouteDestinationGroup.all(in: profiles)
                 Menu {
-                    ForEach(profiles) { profile in
-                        Button {
-                            settingsStore.setDefaultTarget(
-                                RouteTarget(browser: profile.browser, profileId: profile.id)
-                            )
-                            dismiss()
-                        } label: {
-                            if isSelected(profile) {
-                                Label(profile.displayName, systemImage: "checkmark")
-                            } else {
-                                Text(profile.displayName)
+                    ForEach(groups) { group in
+                        if let title = group.title {
+                            Menu(title) {
+                                ForEach(group.destinations) { destinationButton($0) }
+                            }
+                        } else {
+                            ForEach(group.destinations) { destinationButton($0) }
+                            if groups.count > 1 {
+                                Divider()
                             }
                         }
                     }
@@ -129,7 +140,7 @@ struct MenuBarContentView: View {
                             .font(.system(size: 13))
                         Spacer(minLength: 0)
                         if activeProfile?.browser == browser {
-                            Text(activeProfile?.displayName ?? "")
+                            Text(activeProfileLabel ?? "")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
@@ -141,6 +152,19 @@ struct MenuBarContentView: View {
                 .menuIndicator(.visible)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
+            }
+        }
+    }
+
+    private func destinationButton(_ destination: RouteDestination) -> some View {
+        Button {
+            settingsStore.setDefaultTarget(destination.target)
+            dismiss()
+        } label: {
+            if settingsStore.settings.defaultTarget == destination.target {
+                Label(destination.title, systemImage: "checkmark")
+            } else {
+                Text(destination.title)
             }
         }
     }
@@ -204,10 +228,6 @@ struct MenuBarContentView: View {
             .padding(.bottom, 1)
     }
 
-    private func isSelected(_ profile: BrowserProfile) -> Bool {
-        let target = settingsStore.settings.defaultTarget
-        return target.browser == profile.browser && target.profileId == profile.id
-    }
 }
 
 private struct MenuRow: View {

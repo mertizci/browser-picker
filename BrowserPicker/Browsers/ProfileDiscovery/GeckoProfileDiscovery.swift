@@ -1,7 +1,14 @@
 import Foundation
 
-struct FirefoxProfileDiscovery: ProfileDiscovery {
-    let browser: BrowserKind = .firefox
+/// Discovers the profiles of a Gecko browser (Firefox, Zen), which all keep
+/// `profiles.ini`, a `Profiles` folder and their profile groups in the same
+/// layout — only the support directory differs.
+struct GeckoProfileDiscovery: ProfileDiscovery {
+    let browser: BrowserKind
+
+    init(browser: BrowserKind) {
+        self.browser = browser
+    }
 
     private static let genericNames: Set<String> = [
         "default",
@@ -11,72 +18,65 @@ struct FirefoxProfileDiscovery: ProfileDiscovery {
         "dev-edition-default"
     ]
 
-    private var firefoxRoot: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/Firefox")
-    }
-
-    private var profilesIniURL: URL {
-        firefoxRoot.appendingPathComponent("profiles.ini")
-    }
-
-    private var profilesDirectory: URL {
-        firefoxRoot.appendingPathComponent("Profiles")
+    private var supportRoot: URL? {
+        guard let directoryName = browser.geckoSupportDirectoryName else { return nil }
+        return FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support")
+            .appendingPathComponent(directoryName)
     }
 
     func discoverProfiles() -> [BrowserProfile] {
-        guard browser.isInstalled else { return [] }
+        guard browser.isInstalled, let supportRoot else { return [] }
 
-        let selectableNames = FirefoxProfileGroupReader.selectableProfileNames()
-        let iniEntries = parseProfilesIni()
+        let selectableNames = GeckoProfileGroupReader(supportDirectory: supportRoot)
+            .selectableProfileNames()
         var byRelativePath: [String: BrowserProfile] = [:]
 
-        for entry in iniEntries {
-            let profile = makeProfile(
+        for entry in parseProfilesIni(in: supportRoot) {
+            byRelativePath[entry.relativePath] = makeProfile(
                 relativePath: entry.relativePath,
                 iniName: entry.iniName,
                 fullPath: entry.fullPath,
                 selectableNames: selectableNames
             )
-            byRelativePath[entry.relativePath] = profile
         }
 
-        if let directories = try? FileManager.default.contentsOfDirectory(
-            at: profilesDirectory,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        ) {
-            for directory in directories {
-                var isDirectory = ObjCBool(false)
-                guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory),
-                      isDirectory.boolValue else { continue }
+        for directory in profileDirectories(in: supportRoot) {
+            let relativePath = "Profiles/\(directory.lastPathComponent)"
+            if byRelativePath[relativePath] != nil { continue }
 
-                let relativePath = "Profiles/\(directory.lastPathComponent)"
-                if byRelativePath[relativePath] != nil { continue }
+            let displayName = selectableNames[relativePath]
+                ?? folderDisplayName(from: directory.lastPathComponent)
+                ?? directory.lastPathComponent
 
-                let displayName = selectableNames[relativePath]
-                    ?? folderDisplayName(from: directory.lastPathComponent)
-                    ?? directory.lastPathComponent
-
-                byRelativePath[relativePath] = BrowserProfile(
-                    id: relativePath,
-                    displayName: displayName,
-                    browser: .firefox,
-                    profilePath: directory.path,
-                    internalName: displayName
-                )
-            }
+            byRelativePath[relativePath] = profile(
+                id: relativePath,
+                displayName: displayName,
+                path: directory.path,
+                internalName: displayName
+            )
         }
 
         let profiles = byRelativePath.values.sorted {
             $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
         }
 
-        if profiles.isEmpty {
-            return [BrowserProfile.defaultProfile(for: .firefox)]
-        }
+        return profiles.isEmpty ? [BrowserProfile.defaultProfile(for: browser)] : profiles
+    }
 
-        return profiles
+    private func profileDirectories(in supportRoot: URL) -> [URL] {
+        let profilesDirectory = supportRoot.appendingPathComponent("Profiles")
+        guard let directories = try? FileManager.default.contentsOfDirectory(
+            at: profilesDirectory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return [] }
+
+        return directories.filter { directory in
+            var isDirectory = ObjCBool(false)
+            return FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory)
+                && isDirectory.boolValue
+        }
     }
 
     private struct INIEntry {
@@ -85,7 +85,8 @@ struct FirefoxProfileDiscovery: ProfileDiscovery {
         let fullPath: String
     }
 
-    private func parseProfilesIni() -> [INIEntry] {
+    private func parseProfilesIni(in supportRoot: URL) -> [INIEntry] {
+        let profilesIniURL = supportRoot.appendingPathComponent("profiles.ini")
         guard let content = try? String(contentsOf: profilesIniURL, encoding: .utf8) else { return [] }
 
         var entries: [INIEntry] = []
@@ -98,7 +99,7 @@ struct FirefoxProfileDiscovery: ProfileDiscovery {
                   let path = currentValues["Path"] else { return }
 
             let iniName = currentValues["Name"] ?? path
-            let fullPath = firefoxRoot.appendingPathComponent(path).path
+            let fullPath = supportRoot.appendingPathComponent(path).path
             entries.append(INIEntry(relativePath: path, iniName: iniName, fullPath: fullPath))
         }
 
@@ -127,22 +128,31 @@ struct FirefoxProfileDiscovery: ProfileDiscovery {
         fullPath: String,
         selectableNames: [String: String]
     ) -> BrowserProfile {
-        let folderName = URL(fileURLWithPath: fullPath).lastPathComponent
-        let folderLabel = folderDisplayName(from: folderName)
-        let displayName: String
+        let folderLabel = folderDisplayName(from: URL(fileURLWithPath: fullPath).lastPathComponent)
+        let displayName = selectableNames[relativePath]
+            ?? resolvedDisplayName(iniName: iniName, folderLabel: folderLabel)
 
-        if let selectableName = selectableNames[relativePath] {
-            displayName = selectableName
-        } else {
-            displayName = resolvedDisplayName(iniName: iniName, folderLabel: folderLabel)
-        }
-
-        return BrowserProfile(
+        return profile(
             id: relativePath,
             displayName: displayName,
-            browser: .firefox,
-            profilePath: fullPath,
+            path: fullPath,
             internalName: iniName
+        )
+    }
+
+    private func profile(
+        id: String,
+        displayName: String,
+        path: String,
+        internalName: String
+    ) -> BrowserProfile {
+        BrowserProfile(
+            id: id,
+            displayName: displayName,
+            browser: browser,
+            profilePath: path,
+            internalName: internalName,
+            spaces: browser == .zen ? ZenSpaceReader.spaces(inProfileAt: path) : []
         )
     }
 
@@ -169,7 +179,7 @@ struct FirefoxProfileDiscovery: ProfileDiscovery {
         }
     }
 
-    /// Firefox profile folders use `{hash}.{label}` — return the label portion.
+    /// Gecko profile folders use `{hash}.{label}` — return the label portion.
     private func folderDisplayName(from folderName: String) -> String? {
         guard let dotIndex = folderName.firstIndex(of: ".") else { return nil }
         let label = String(folderName[folderName.index(after: dotIndex)...])

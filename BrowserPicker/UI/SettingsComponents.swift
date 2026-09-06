@@ -210,6 +210,10 @@ struct StatusBanner: View {
 
 struct ProfileSummaryRow: View {
     let profile: BrowserProfile
+    var spaceId: String?
+    /// Shown instead of a space, for callers that describe the profile rather
+    /// than a destination inside it.
+    var detail: String?
     var showsChevron = false
 
     var body: some View {
@@ -218,7 +222,7 @@ struct ProfileSummaryRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(profile.displayName)
                     .font(.body.weight(.medium))
-                Text(profile.browser.displayName)
+                Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -229,6 +233,12 @@ struct ProfileSummaryRow: View {
                     .foregroundStyle(.tertiary)
             }
         }
+    }
+
+    private var subtitle: String {
+        [profile.browser.displayName, profile.space(id: spaceId)?.nestedLabel ?? detail]
+            .compactMap { $0 }
+            .joined(separator: " · ")
     }
 }
 

@@ -61,17 +61,27 @@ struct PickerPromptView: View {
         .frame(width: 380)
     }
 
-    /// Grows with the number of profiles, only scrolling once the list would
+    /// Grows with the number of destinations, only scrolling once the list would
     /// exceed `maxVisibleRows` — so a couple of profiles don't leave dead space.
     @ViewBuilder
     private func profileList(for url: URL) -> some View {
-        let rows = VStack(spacing: 8) {
-            ForEach(settingsStore.profiles) { profile in
-                profileRow(profile, url: url)
+        let groups = RouteDestinationGroup.all(in: settingsStore.profiles)
+        let rows = VStack(alignment: .leading, spacing: 12) {
+            ForEach(groups) { group in
+                VStack(alignment: .leading, spacing: 8) {
+                    if let title = group.title {
+                        Text(title.uppercased())
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    ForEach(group.destinations) { destination in
+                        destinationRow(destination, url: url)
+                    }
+                }
             }
         }
 
-        if settingsStore.profiles.count > maxVisibleRows {
+        if rowCount(of: groups) > maxVisibleRows {
             ScrollView { rows }
                 .frame(height: estimatedRowHeight * CGFloat(maxVisibleRows))
         } else {
@@ -79,26 +89,35 @@ struct PickerPromptView: View {
         }
     }
 
+    /// Group headings take room of their own, so they count towards the height
+    /// the list is allowed before it starts scrolling.
+    private func rowCount(of groups: [RouteDestinationGroup]) -> Int {
+        groups.reduce(0) { total, group in
+            total + group.destinations.count + (group.title == nil ? 0 : 1)
+        }
+    }
+
     private var estimatedRowHeight: CGFloat { 56 }
 
     @ViewBuilder
-    private func profileRow(_ profile: BrowserProfile, url: URL) -> some View {
-        let target = RouteTarget(browser: profile.browser, profileId: profile.id)
+    private func destinationRow(_ destination: RouteDestination, url: URL) -> some View {
         Button {
-            selectedTarget = target
-            urlRouter.completePickerSelection(url: url, target: target)
+            selectedTarget = destination.target
+            urlRouter.completePickerSelection(url: url, target: destination.target)
         } label: {
             HStack(spacing: 12) {
-                ProfileIconView(profile: profile, size: 28)
+                ProfileIconView(profile: destination.profile, size: 28)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(profile.displayName)
+                    Text(destination.title)
                         .font(.headline)
-                    Text(profile.browser.displayName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let subtitle = destination.subtitle {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
-                if selectedTarget == target {
+                if selectedTarget == destination.target {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Color.accentColor)
                 }

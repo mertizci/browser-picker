@@ -9,17 +9,20 @@ enum BrowserEngine {
 
 /// How a browser is told to open a link in one of its profiles. This is not
 /// implied by the rendering engine: Dia renders with Chromium but is a native
-/// app that never sees Chromium's command line.
+/// app that never sees Chromium's command line, and Zen adds spaces on top of
+/// Gecko's profiles.
 enum ProfileLaunchStyle {
     /// Chromium's `--profile-directory` switch.
     case chromiumArguments
     /// Firefox's `--profile` and `-P` switches.
-    case firefoxArguments
+    case geckoArguments
     /// Safari exposes no profile switch, so its windows are driven by AppleScript.
     case safariAutomation
     /// Dia drops every command-line argument — including the URL — so it is
     /// driven by AppleScript as well.
     case diaAutomation
+    /// Zen takes Gecko's profile switches, but its spaces only exist in the UI.
+    case zenAutomation
 }
 
 enum BrowserKind: String, Codable, CaseIterable, Identifiable {
@@ -29,6 +32,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
     case vivaldi
     case dia
     case firefox
+    case zen
     case safari
 
     var id: String { rawValue }
@@ -41,6 +45,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .vivaldi: return "Vivaldi"
         case .dia: return "Dia"
         case .firefox: return "Firefox"
+        case .zen: return "Zen"
         case .safari: return "Safari"
         }
     }
@@ -48,7 +53,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
     var engine: BrowserEngine {
         switch self {
         case .chrome, .edge, .brave, .vivaldi, .dia: return .chromium
-        case .firefox: return .gecko
+        case .firefox, .zen: return .gecko
         case .safari: return .webkit
         }
     }
@@ -57,7 +62,8 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .chrome, .edge, .brave, .vivaldi: return .chromiumArguments
         case .dia: return .diaAutomation
-        case .firefox: return .firefoxArguments
+        case .firefox: return .geckoArguments
+        case .zen: return .zenAutomation
         case .safari: return .safariAutomation
         }
     }
@@ -70,6 +76,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .vivaldi: return "com.vivaldi.Vivaldi"
         case .dia: return "company.thebrowser.dia"
         case .firefox: return "org.mozilla.firefox"
+        case .zen: return "app.zen-browser.zen"
         case .safari: return "com.apple.Safari"
         }
     }
@@ -83,6 +90,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .vivaldi: return "/Applications/Vivaldi.app"
         case .dia: return "/Applications/Dia.app"
         case .firefox: return "/Applications/Firefox.app"
+        case .zen: return "/Applications/Zen.app"
         case .safari: return "/Applications/Safari.app"
         }
     }
@@ -121,6 +129,7 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .vivaldi: return "Vivaldi"
         case .dia: return "Dia"
         case .firefox: return "firefox"
+        case .zen: return "zen"
         case .safari: return "Safari"
         }
     }
@@ -133,9 +142,39 @@ enum BrowserKind: String, Codable, CaseIterable, Identifiable {
         case .brave: return "BraveSoftware/Brave-Browser/Local State"
         case .vivaldi: return "Vivaldi/Local State"
         case .dia: return "Dia/User Data/Local State"
-        case .firefox, .safari: return nil
+        case .firefox, .zen, .safari: return nil
         }
     }
+
+    /// Directory (inside `~/Library/Application Support`) where a Gecko browser
+    /// keeps `profiles.ini`, its `Profiles` folder and its profile groups.
+    var geckoSupportDirectoryName: String? {
+        switch self {
+        case .firefox: return "Firefox"
+        case .zen: return "zen"
+        default: return nil
+        }
+    }
+}
+
+/// A Zen space: a workspace living inside one profile, with its own tabs.
+struct BrowserSpace: Codable, Identifiable, Hashable {
+    var id: String
+    /// The name Zen shows in its Spaces menu, which is how the space is picked.
+    var name: String
+    /// The container (Gecko's contextual identity) the space opens its tabs in,
+    /// when the user bound one.
+    var containerName: String? = nil
+
+    /// The container this space belongs to, named the way Zen names it: Zen's
+    /// space settings call this field "Profile" and offer "Default" for a space
+    /// bound to no container. Spaces are grouped under this, so every space has
+    /// a container to sit in.
+    var containerLabel: String { containerName ?? "Default" }
+
+    /// Reads as "Work · work": this space under the container holding it, for
+    /// the places that name a space without grouping it.
+    var nestedLabel: String { "\(containerLabel) · \(name)" }
 }
 
 struct BrowserProfile: Codable, Identifiable, Hashable {
@@ -145,6 +184,8 @@ struct BrowserProfile: Codable, Identifiable, Hashable {
     var profilePath: String?
     /// Firefox `profiles.ini` Name field — used for `-P` launch fallback.
     var internalName: String?
+    /// Spaces inside this profile, in the browser's own order. Only Zen has them.
+    var spaces: [BrowserSpace] = []
 
     static func defaultProfile(for browser: BrowserKind) -> BrowserProfile {
         BrowserProfile(
@@ -155,11 +196,35 @@ struct BrowserProfile: Codable, Identifiable, Hashable {
             internalName: nil
         )
     }
+
+    func space(id spaceId: String?) -> BrowserSpace? {
+        guard let spaceId else { return nil }
+        return spaces.first { $0.id == spaceId }
+    }
+
+    /// The profile's spaces under the containers holding them, keeping the
+    /// browser's own order of the containers as much as of the spaces inside
+    /// them, so lists read like the browser's own menus.
+    var spacesByContainer: [(container: String, spaces: [BrowserSpace])] {
+        var containerOrder: [String] = []
+        var grouped: [String: [BrowserSpace]] = [:]
+
+        for space in spaces {
+            if grouped[space.containerLabel] == nil {
+                containerOrder.append(space.containerLabel)
+            }
+            grouped[space.containerLabel, default: []].append(space)
+        }
+
+        return containerOrder.map { ($0, grouped[$0] ?? []) }
+    }
 }
 
 struct RouteTarget: Codable, Hashable {
     var browser: BrowserKind
     var profileId: String
+    /// A space inside the profile, or `nil` to use whichever space is open.
+    var spaceId: String? = nil
 
     var label: String {
         "\(browser.displayName) · \(profileId)"

@@ -183,8 +183,11 @@ private struct GeneralSettingsTab: View {
                 subtitle: "This browser and profile are used when no rule matches and fallback is silent."
             ) {
                 if let profile = settingsStore.profile(for: settingsStore.settings.defaultTarget) {
-                    ProfileSummaryRow(profile: profile)
-                        .padding(.horizontal, 4)
+                    ProfileSummaryRow(
+                        profile: profile,
+                        spaceId: settingsStore.settings.defaultTarget.spaceId
+                    )
+                    .padding(.horizontal, 4)
                 } else {
                     HStack(spacing: 10) {
                         Image(systemName: "questionmark.circle")
@@ -365,6 +368,17 @@ private struct BrowserProfilesCard: View {
     let browser: BrowserKind
     let profiles: [BrowserProfile]
 
+    /// Reads as "Default: Space, asd · Work: work": the profile's spaces under
+    /// the containers they belong to, which is how links are routed to them.
+    private func spacesDetail(for profile: BrowserProfile) -> String? {
+        guard !profile.spaces.isEmpty else { return nil }
+        return profile.spacesByContainer
+            .map { container, spaces in
+                "\(container): \(spaces.map(\.name).joined(separator: ", "))"
+            }
+            .joined(separator: " · ")
+    }
+
     var body: some View {
         SettingsCard(
             title: browser.displayName,
@@ -372,7 +386,7 @@ private struct BrowserProfilesCard: View {
         ) {
             VStack(spacing: 0) {
                 ForEach(Array(profiles.enumerated()), id: \.element.id) { index, profile in
-                    ProfileSummaryRow(profile: profile)
+                    ProfileSummaryRow(profile: profile, detail: spacesDetail(for: profile))
                         .padding(.vertical, 8)
                         .padding(.horizontal, 4)
 

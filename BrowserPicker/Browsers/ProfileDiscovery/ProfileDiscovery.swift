@@ -10,7 +10,10 @@ enum ProfileDiscoveryService {
         BrowserKind.allCases
             .filter { $0.engine == .chromium }
             .map { ChromiumProfileDiscovery(browser: $0) }
-        + [FirefoxProfileDiscovery(), SafariProfileDiscovery()]
+        + BrowserKind.allCases
+            .filter { $0.engine == .gecko }
+            .map { GeckoProfileDiscovery(browser: $0) }
+        + [SafariProfileDiscovery()]
 
     static func discoverAll() -> [BrowserProfile] {
         discoverers.flatMap { $0.discoverProfiles() }

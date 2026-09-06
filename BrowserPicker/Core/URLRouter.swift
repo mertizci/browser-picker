@@ -12,6 +12,16 @@ final class URLRouter: ObservableObject {
     private let launcher = BrowserLauncher()
     private var settingsStore: SettingsStore { .shared }
 
+    /// Links whose open is still on its way to a browser. A link is dropped
+    /// while its own open is in flight, so it cannot end up in two tabs when it
+    /// arrives twice — macOS re-delivering it, or a second click made while a
+    /// cold browser is still starting and nothing has appeared yet.
+    private var linksBeingOpened: Set<URL> = []
+
+    /// A browser opens its tab shortly after the launcher is done, so a link
+    /// stays guarded a moment longer than the open itself takes.
+    private static let openSettleDelay: Duration = .seconds(2)
+
     private init() {}
 
     func handleOpenURLs(_ urls: [URL], sourceApp: String? = nil) {
@@ -63,15 +73,26 @@ final class URLRouter: ObservableObject {
             return
         }
 
+        guard linksBeingOpened.insert(url).inserted else { return }
+
         let siblingProfileNames = settingsStore.profiles(for: profile.browser)
             .map { $0.internalName ?? $0.displayName }
+        let space = profile.space(id: target.spaceId)
 
         Task {
             do {
-                try await launcher.open(url: url, profile: profile, siblingProfileNames: siblingProfileNames)
+                try await launcher.open(
+                    url: url,
+                    profile: profile,
+                    space: space,
+                    siblingProfileNames: siblingProfileNames
+                )
             } catch {
                 showError(error)
             }
+
+            try? await Task.sleep(for: Self.openSettleDelay)
+            linksBeingOpened.remove(url)
         }
     }
 

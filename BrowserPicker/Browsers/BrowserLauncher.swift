@@ -2,9 +2,16 @@ import AppKit
 import Foundation
 
 struct BrowserLauncher {
+    /// - Parameter space: a space inside `profile`, or `nil` to use whichever
+    ///   space the browser already has open.
     /// - Parameter siblingProfileNames: every profile name of `profile`'s
     ///   browser, which browsers driven by automation need to tell profiles apart.
-    func open(url: URL, profile: BrowserProfile, siblingProfileNames: [String] = []) async throws {
+    func open(
+        url: URL,
+        profile: BrowserProfile,
+        space: BrowserSpace? = nil,
+        siblingProfileNames: [String] = []
+    ) async throws {
         guard profile.browser.isInstalled else {
             throw BrowserPickerError.browserNotInstalled(profile.browser)
         }
@@ -12,8 +19,10 @@ struct BrowserLauncher {
         switch profile.browser.profileLaunchStyle {
         case .chromiumArguments:
             try launchChromium(url: url, profile: profile)
-        case .firefoxArguments:
-            try launchFirefox(url: url, profile: profile)
+        case .geckoArguments:
+            try GeckoLauncher().launch(url: url, profile: profile)
+        case .zenAutomation:
+            try ZenLauncher().open(url: url, profile: profile, space: space)
         case .safariAutomation:
             try SafariLauncher().open(url: url, profile: profile, allProfileNames: siblingProfileNames)
         case .diaAutomation:
@@ -29,33 +38,4 @@ struct BrowserLauncher {
         try process.run()
     }
 
-    private func launchFirefox(url: URL, profile: BrowserProfile) throws {
-        var attempts: [[String]] = []
-
-        if let profilePath = profile.profilePath,
-           profile.id != "\(BrowserKind.firefox.rawValue)-default" {
-            attempts.append(["--profile", profilePath, "-url", url.absoluteString])
-            if let internalName = profile.internalName {
-                attempts.append(["-P", internalName, "-url", url.absoluteString])
-                attempts.append(["-P", internalName, "-no-remote", "-url", url.absoluteString])
-            }
-        } else {
-            attempts.append(["-url", url.absoluteString])
-        }
-
-        var lastError: Error?
-        for arguments in attempts {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: profile.browser.executablePath)
-            process.arguments = arguments
-            do {
-                try process.run()
-                return
-            } catch {
-                lastError = error
-            }
-        }
-
-        throw BrowserPickerError.launchFailed(lastError?.localizedDescription ?? "Unknown error")
-    }
 }

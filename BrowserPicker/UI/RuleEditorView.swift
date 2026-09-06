@@ -10,6 +10,7 @@ struct RuleEditorView: View {
     @State private var matcherValue: String
     @State private var selectedBrowser: BrowserKind
     @State private var selectedProfileId: String
+    @State private var selectedSpaceId: String?
     @State private var showDeleteConfirmation = false
 
     private let existingID: UUID?
@@ -25,6 +26,7 @@ struct RuleEditorView: View {
         _matcherValue = State(initialValue: rule?.matcher.value ?? "")
         _selectedBrowser = State(initialValue: rule?.target.browser ?? .firefox)
         _selectedProfileId = State(initialValue: rule?.target.profileId ?? "")
+        _selectedSpaceId = State(initialValue: rule?.target.spaceId)
         self.onSave = onSave
     }
 
@@ -75,7 +77,7 @@ struct RuleEditorView: View {
                             .textFieldStyle(.roundedBorder)
                     }
 
-                    editorSection(title: "Open in", subtitle: "Pick the browser and profile for matched links.", icon: "arrow.up.forward.app") {
+                    editorSection(title: "Open in", subtitle: "Pick the browser, profile and space for matched links.", icon: "arrow.up.forward.app") {
                         Picker("Browser", selection: $selectedBrowser) {
                             ForEach(BrowserKind.allCases) { browser in
                                 Text(browser.displayName).tag(browser)
@@ -94,13 +96,25 @@ struct RuleEditorView: View {
                                 .foregroundStyle(.orange)
                                 .padding(.vertical, 4)
                         } else {
-                            VStack(spacing: 8) {
-                                ForEach(profiles) { profile in
-                                    ProfilePickerRow(
-                                        profile: profile,
-                                        isSelected: selectedProfileId == profile.id,
-                                        action: { selectedProfileId = profile.id }
-                                    )
+                            VStack(alignment: .leading, spacing: 14) {
+                                ForEach(RouteDestinationGroup.all(in: profiles)) { group in
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        if let title = group.title {
+                                            Text(title.uppercased())
+                                                .font(.caption2.weight(.bold))
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                        ForEach(group.destinations) { destination in
+                                            DestinationPickerRow(
+                                                destination: destination,
+                                                isSelected: destination.target == selectedTarget,
+                                                action: {
+                                                    selectedProfileId = destination.profile.id
+                                                    selectedSpaceId = destination.space?.id
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -172,10 +186,10 @@ struct RuleEditorView: View {
                 Text("OPEN IN")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.tertiary)
-                if let profile = settingsStore.profiles(for: selectedBrowser).first(where: { $0.id == selectedProfileId }) {
+                if let profile = selectedProfile {
                     HStack(spacing: 6) {
                         ProfileIconView(profile: profile, size: 16)
-                        Text("\(profile.browser.displayName) · \(profile.displayName)")
+                        Text(profile.routeLabel(spaceId: selectedSpaceId))
                             .font(.caption.weight(.medium))
                             .lineLimit(1)
                     }
@@ -237,26 +251,12 @@ struct RuleEditorView: View {
         )
     }
 
-    private func resolveProfileSelection() {
-        let available = settingsStore.profiles(for: selectedBrowser)
-        if available.contains(where: { $0.id == selectedProfileId }) {
-            return
-        }
+    private var selectedProfile: BrowserProfile? {
+        settingsStore.profiles(for: selectedBrowser).first { $0.id == selectedProfileId }
+    }
 
-        if let match = available.first(where: {
-            $0.displayName == selectedProfileId
-                || $0.internalName == selectedProfileId
-                || (selectedProfileId == "safari-default" && $0.id == SafariProfileRecord.defaultID)
-        }) {
-            selectedProfileId = match.id
-            return
-        }
-
-        if let first = available.first {
-            selectedProfileId = first.id
-        } else {
-            selectedProfileId = ""
-        }
+    private var selectedTarget: RouteTarget {
+        RouteTarget(browser: selectedBrowser, profileId: selectedProfileId, spaceId: selectedSpaceId)
     }
 
     private var matcherPlaceholder: String {
@@ -274,8 +274,8 @@ struct RuleEditorView: View {
     }
 
     private func resolveProfileSelection(for browser: BrowserKind? = nil) {
-        let browserKind = browser ?? selectedBrowser
-        let available = settingsStore.profiles(for: browserKind)
+        let available = settingsStore.profiles(for: browser ?? selectedBrowser)
+        defer { discardSpaceUnlessAvailable(in: available) }
 
         if available.contains(where: { $0.id == selectedProfileId }) {
             return
@@ -290,10 +290,14 @@ struct RuleEditorView: View {
             return
         }
 
-        if let first = available.first {
-            selectedProfileId = first.id
-        } else {
-            selectedProfileId = ""
+        selectedProfileId = available.first?.id ?? ""
+    }
+
+    /// A space belongs to one profile, so it cannot survive a change of profile.
+    private func discardSpaceUnlessAvailable(in profiles: [BrowserProfile]) {
+        let profile = profiles.first { $0.id == selectedProfileId }
+        if profile?.space(id: selectedSpaceId) == nil {
+            selectedSpaceId = nil
         }
     }
 
@@ -304,28 +308,30 @@ struct RuleEditorView: View {
             enabled: enabled,
             priority: existingPriority ?? 0,
             matcher: RuleMatcher(kind: matcherKind, value: matcherValue.trimmingCharacters(in: .whitespaces)),
-            target: RouteTarget(browser: selectedBrowser, profileId: selectedProfileId)
+            target: selectedTarget
         )
         onSave(rule)
         dismiss()
     }
 }
 
-private struct ProfilePickerRow: View {
-    let profile: BrowserProfile
+private struct DestinationPickerRow: View {
+    let destination: RouteDestination
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                ProfileIconView(profile: profile, size: 24)
+                ProfileIconView(profile: destination.profile, size: 24)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(profile.displayName)
+                    Text(destination.title)
                         .font(.body.weight(.medium))
-                    Text(profile.browser.displayName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let subtitle = destination.subtitle {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")

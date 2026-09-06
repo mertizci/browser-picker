@@ -20,7 +20,7 @@ enum PermissionKind: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .accessibility:
-            return "Control Safari and Dia to open links in the correct profile."
+            return "Control Safari, Dia and Zen to open links in the correct profile and space."
         case .fullDiskAccess:
             return "Read Safari profile names from the system database."
         }

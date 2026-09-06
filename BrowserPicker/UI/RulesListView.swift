@@ -209,7 +209,7 @@ private struct RuleCardView: View {
         if let profile = settingsStore.profile(for: rule.target) {
             HStack(spacing: 8) {
                 ProfileIconView(profile: profile, size: 18)
-                Text("\(profile.browser.displayName) · \(profile.displayName)")
+                Text(profile.routeLabel(spaceId: rule.target.spaceId))
                     .font(.caption.weight(.medium))
             }
             .padding(.horizontal, 8)
