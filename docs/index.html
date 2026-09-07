@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Browser Picker — Send every link to the right browser profile on macOS</title>
+<meta name="description" content="A native macOS menu bar app that becomes your default browser and routes every link to the right browser and profile — automatically with rules, or with a quick picker." />
+
+<link rel="icon" type="image/png" sizes="128x128" href="assets/icon-128.png" />
+<link rel="apple-touch-icon" href="assets/icon-256.png" />
+<link rel="canonical" href="https://mertizci.github.io/browser-picker/" />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Browser Picker — the right link, in the right browser profile" />
+<meta property="og:description" content="Native macOS menu bar app that routes every link to the right browser and profile — automatically with rules, or with a quick picker." />
+<meta property="og:url" content="https://mertizci.github.io/browser-picker/" />
+<meta property="og:image" content="https://mertizci.github.io/browser-picker/assets/og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<link rel="preconnect" href="https://api.github.com" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="#top">
+      <img src="assets/icon-128.png" alt="" width="28" height="28" />
+      <span>Browser Picker</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#features">Features</a>
+      <a href="#screenshots">Screenshots</a>
+      <a href="#how">How it works</a>
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+      <a class="nav-cta" href="https://github.com/mertizci/browser-picker">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ───────────────────────── Hero ───────────────────────── -->
+  <section class="hero" id="top">
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">
+          <span class="dot"></span>
+          Free &amp; open source for macOS
+        </p>
+
+        <h1>
+          The right link,<br />
+          in the <span class="grad">right profile</span>.
+        </h1>
+
+        <p class="lede">
+          Browser Picker becomes your default browser and quietly sends every link to the exact
+          <strong>browser <em>and</em> profile</strong> it belongs to. Work links to your work profile,
+          personal links to your personal one — automatically.
+        </p>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" id="download-btn" href="https://github.com/mertizci/browser-picker/releases/latest">
+            <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" fill="currentColor">
+              <path d="M8 1a1 1 0 0 1 1 1v6.6l2.3-2.3a1 1 0 0 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.4L7 8.6V2a1 1 0 0 1 1-1Z"/>
+              <path d="M2 12a1 1 0 0 1 1 1v0h10v0a1 1 0 1 1 2 0 2 2 0 0 1-2 2H3a2 2 0 0 1-2-2 1 1 0 0 1 1-1Z"/>
+            </svg>
+            <span>Download for macOS</span>
+          </a>
+
+          <div class="brew" role="group" aria-label="Install with Homebrew">
+            <code id="brew-cmd">brew install --cask mertizci/tap/browser-picker</code>
+            <button class="copy-btn" type="button" data-copy="#brew-cmd" aria-label="Copy Homebrew command">
+              <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor">
+                <path d="M5 2a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V2Zm2-.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5V2a.5.5 0 0 0-.5-.5H7Z"/>
+                <path d="M2 5a2 2 0 0 1 2-2v1.5A.5.5 0 0 0 3.5 5v9a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5H11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5Z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <ul class="meta-row">
+          <li id="version-line">Latest release on GitHub</li>
+          <li>macOS 14.0+</li>
+          <li>Apple Silicon &amp; Intel</li>
+          <li>Notarized by Apple</li>
+        </ul>
+      </div>
+
+      <div class="hero-art">
+        <div class="glow" aria-hidden="true"></div>
+        <img
+          class="shot-menubar"
+          src="assets/shots/menubar.png"
+          width="569" height="1000"
+          alt="The Browser Picker menu bar popover, listing installed browsers with their profiles and a shortcut to Settings."
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Problem ───────────────────────── -->
+  <section class="section band" id="why">
+    <div class="container narrow">
+      <h2>You don't have one browser. You have six.</h2>
+      <p class="section-lede">
+        A personal Chrome. A work Chrome profile. Firefox for a client. Safari for everything else.
+        Every link you click is a small gamble — and when it loses, you're signed into the wrong account,
+        copying the URL, and pasting it somewhere else.
+      </p>
+      <p class="section-lede">
+        Browser Picker removes the gamble. It sits in your menu bar as the system default browser,
+        looks at each incoming link, and opens it exactly where it belongs.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Features ───────────────────────── -->
+  <section class="section" id="features">
+    <div class="container">
+      <h2 class="center">Everything it does</h2>
+
+      <div class="feature-grid">
+        <article class="card highlight">
+          <div class="card-icon">🎯</div>
+          <h3>Profile-level routing</h3>
+          <p>
+            Not just “open in Chrome” — <strong>“open in Chrome → Work”</strong> or
+            <strong>“Firefox → Client A”</strong>. Each link lands in the right account, already signed in.
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="card-icon">🔀</div>
+          <h3>Automatic rules</h3>
+          <p>
+            Match links by <em>URL contains</em>, <em>host equals</em>, or <em>host suffix</em>.
+            First match wins, and you can reorder rules by dragging.
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="card-icon">🖱️</div>
+          <h3>Quick picker</h3>
+          <p>
+            No rule for this link? Choose the browser and profile on the fly, or let it fall through
+            silently to whatever you selected in the menu bar.
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="card-icon">👤</div>
+          <h3>Finds your profiles</h3>
+          <p>
+            Chrome, Edge, Brave and Vivaldi from their <code>Local State</code>; Firefox from
+            <code>profiles.ini</code> and Profile Groups; Safari from its profile database.
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="card-icon">🧭</div>
+          <h3>Lives in the menu bar</h3>
+          <p>
+            Switch your active browser and profile in one click. No dock icon, no window in your way —
+            just a small popover when you need it.
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="card-icon">🔒</div>
+          <h3>Native and trusted</h3>
+          <p>
+            Written in Swift and SwiftUI, universal for Apple Silicon and Intel, signed with a
+            Developer ID certificate and notarized by Apple. No Gatekeeper warnings.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Screenshots ───────────────────────── -->
+  <section class="section band" id="screenshots">
+    <div class="container">
+      <h2 class="center">A closer look</h2>
+      <p class="center section-lede">
+        Three panes, no clutter. Set the fallback behaviour, write your rules, and check the profiles
+        Browser Picker found on your Mac.
+      </p>
+
+      <div class="shots">
+        <figure class="shot">
+          <img src="assets/shots/rules.png" width="1600" height="1208" loading="lazy"
+               alt="The Rules pane listing numbered routing rules, each showing its match pattern and destination browser profile." />
+          <figcaption><strong>Rules</strong> — route links by URL pattern, drag to reorder, first match wins.</figcaption>
+        </figure>
+
+        <figure class="shot">
+          <img src="assets/shots/settings.png" width="1600" height="1208" loading="lazy"
+               alt="The General pane showing default browser status and the fallback behaviour options." />
+          <figcaption><strong>General</strong> — choose what happens to links that match no rule.</figcaption>
+        </figure>
+
+        <figure class="shot">
+          <img src="assets/shots/browsers.png" width="1600" height="1208" loading="lazy"
+               alt="The Browsers pane listing detected browsers with the profiles found for each one." />
+          <figcaption><strong>Browsers</strong> — every profile discovered on your Mac, ready to target.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── How ───────────────────────── -->
+  <section class="section" id="how">
+    <div class="container">
+      <h2 class="center">Up and running in a minute</h2>
+
+      <ol class="steps">
+        <li>
+          <span class="step-num">1</span>
+          <h3>Install and launch</h3>
+          <p>The icon appears in your menu bar. A short onboarding asks for the permissions it needs to reach Safari profiles.</p>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <h3>Make it your default browser</h3>
+          <p>One click from the menu bar, or pick <em>Browser Picker</em> under System Settings → Desktop &amp; Dock.</p>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <h3>Add your rules</h3>
+          <p>Open Settings → Rules and describe where links should go, for example <em>host suffix <code>github.com</code> → Chrome · Work</em>.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Install ───────────────────────── -->
+  <section class="section band" id="install">
+    <div class="container">
+      <h2 class="center">Get Browser Picker</h2>
+      <p class="center section-lede">
+        Free and open source. Every release is signed and notarized by Apple, so it opens without warnings.
+      </p>
+
+      <div class="install-grid">
+        <div class="install-card recommended">
+          <span class="ribbon">Recommended</span>
+          <h3>Download the DMG</h3>
+          <p>Grab the latest disk image, open it, and drag Browser Picker into your Applications folder.</p>
+          <a class="btn btn-primary full" id="dmg-btn" href="https://github.com/mertizci/browser-picker/releases/latest">
+            Download latest release
+          </a>
+          <p class="fineprint" id="release-note">Universal build · macOS 14.0 or later</p>
+        </div>
+
+        <div class="install-card">
+          <h3>Or use Homebrew</h3>
+          <p>Already a Homebrew user? Install and update it with a single command.</p>
+          <div class="brew standalone">
+            <code id="brew-cmd-2">brew install --cask mertizci/tap/browser-picker</code>
+            <button class="copy-btn" type="button" data-copy="#brew-cmd-2" aria-label="Copy Homebrew command">
+              <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor">
+                <path d="M5 2a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V2Zm2-.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5V2a.5.5 0 0 0-.5-.5H7Z"/>
+                <path d="M2 5a2 2 0 0 1 2-2v1.5A.5.5 0 0 0 3.5 5v9a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5H11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5Z"/>
+              </svg>
+            </button>
+          </div>
+          <p class="fineprint">Updates arrive with <code>brew upgrade</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── FAQ ───────────────────────── -->
+  <section class="section" id="faq">
+    <div class="container narrow">
+      <h2 class="center">Questions</h2>
+
+      <details>
+        <summary>Does it work on Intel Macs?</summary>
+        <p>Yes. Browser Picker ships as a universal binary, so it runs natively on both Apple Silicon and Intel Macs. It requires macOS 14.0 (Sonoma) or later.</p>
+      </details>
+
+      <details>
+        <summary>Which browsers are supported?</summary>
+        <p>Safari, Google Chrome, Microsoft Edge, Brave, Vivaldi and Firefox — including their individual profiles.</p>
+      </details>
+
+      <details>
+        <summary>Why does it ask for Accessibility and Full Disk Access?</summary>
+        <p>Only for Safari. Safari has no public way to open a link in a specific profile, so Browser Picker drives Safari's own <em>File</em> menu to do it, and reads Safari's profile names from a protected file. Other browsers need no permissions at all.</p>
+      </details>
+
+      <details>
+        <summary>Does it track me or send my links anywhere?</summary>
+        <p>No. Everything happens on your Mac. There is no analytics, no account, and no network traffic other than an optional check for new releases on GitHub. Your settings live in a plain JSON file in your Library folder.</p>
+      </details>
+
+      <details>
+        <summary>Is it really free?</summary>
+        <p>Yes, and the source is on GitHub. If it saves you time, you're welcome to buy me a coffee — but nothing is locked behind it.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Final CTA ───────────────────────── -->
+  <section class="section final-cta">
+    <div class="container narrow center">
+      <img src="assets/icon-256.png" alt="" width="88" height="88" class="final-icon" />
+      <h2>Stop opening links twice.</h2>
+      <p class="section-lede">Install it once, add a couple of rules, and forget it's there.</p>
+      <div class="cta-row center-row">
+        <a class="btn btn-primary" href="https://github.com/mertizci/browser-picker/releases/latest">Download for macOS</a>
+        <a class="btn btn-ghost" href="https://github.com/mertizci/browser-picker">View source on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="assets/icon-128.png" alt="" width="24" height="24" />
+      <span>Browser Picker</span>
+    </div>
+
+    <nav class="footer-links" aria-label="Footer">
+      <a href="https://github.com/mertizci/browser-picker">GitHub</a>
+      <a href="https://github.com/mertizci/browser-picker/releases">Releases</a>
+      <a href="https://github.com/mertizci/browser-picker/issues">Report an issue</a>
+      <a href="https://www.paypal.com/donate/?hosted_button_id=8BKTHWAHUPWPG">Donate</a>
+    </nav>
+
+    <p class="footer-note">
+      Made by <a href="mailto:mertizci@gmail.com">Mert IZCI</a>.
+    </p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

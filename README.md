@@ -16,11 +16,43 @@ A native macOS menu bar app that becomes your <b>default browser</b> and sends e
 <a href="https://www.paypal.com/donate/?hosted_button_id=8BKTHWAHUPWPG"><img src="https://img.shields.io/badge/Donate-PayPal-0070ba?logo=paypal&logoColor=white" alt="Donate via PayPal" /></a>
 </p>
 
+<p align="center">
+<a href="https://mertizci.github.io/browser-picker/"><b>Website</b></a> ·
+<a href="https://github.com/mertizci/browser-picker/releases/latest"><b>Download</b></a> ·
+<a href="#screenshots"><b>Screenshots</b></a>
+</p>
+
 ---
 
 ## Why Browser Picker?
 
 Juggling a personal Chrome, a work Chrome profile, and Firefox for clients? Stop opening links in the wrong place. Browser Picker routes each link to the exact **browser and profile** you want — so work links land in your work profile, personal links in your personal one, automatically.
+
+## Screenshots
+
+<p align="center">
+<img src="docs/assets/shots/menubar.png" width="290" alt="Browser Picker menu bar popover listing installed browsers and their profiles" />
+</p>
+
+<p align="center"><em>The menu bar popover — switch your active browser and profile in one click.</em></p>
+
+<p align="center">
+<img src="docs/assets/shots/rules.png" width="820" alt="Rules pane showing numbered routing rules with their match patterns and destination profiles" />
+</p>
+
+<p align="center"><em><b>Rules</b> — route links by URL pattern. First match wins, and you can drag to reorder.</em></p>
+
+<p align="center">
+<img src="docs/assets/shots/settings.png" width="820" alt="General pane showing default browser status and fallback behaviour options" />
+</p>
+
+<p align="center"><em><b>General</b> — choose what happens to links that match no rule.</em></p>
+
+<p align="center">
+<img src="docs/assets/shots/browsers.png" width="820" alt="Browsers pane listing detected browsers with the profiles found for each" />
+</p>
+
+<p align="center"><em><b>Browsers</b> — every profile Browser Picker discovered on your Mac.</em></p>
 
 ## Install
 
