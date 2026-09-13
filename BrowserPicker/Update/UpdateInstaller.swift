@@ -1,6 +1,5 @@
 import AppKit
 import Foundation
-import Security
 
 enum UpdateInstallError: LocalizedError {
     case mountFailed
@@ -29,9 +28,6 @@ enum UpdateInstallError: LocalizedError {
 /// expected Developer ID team, stages a verified copy, then performs an
 /// in-place swap + relaunch via a detached shell script.
 struct UpdateInstaller {
-    /// Developer ID team that legitimately signs Browser Picker.
-    private static let expectedTeamID = "NZDMMFNMU4"
-    private static let bundleIdentifier = "com.browserpicker.app"
     private static let appName = "BrowserPicker.app"
 
     // MARK: - Stage
@@ -62,6 +58,8 @@ struct UpdateInstaller {
             throw UpdateInstallError.stagingFailed
         }
 
+        try verifySignature(of: stagedApp)
+
         return stagedApp
     }
 
@@ -72,6 +70,7 @@ struct UpdateInstaller {
     /// This never returns on success — it terminates the current process so
     /// the detached script can replace the bundle while nothing holds it open.
     func installAndRelaunch(stagedApp: URL, into destination: URL) throws {
+        try verifySignature(of: stagedApp)
         let parent = destination.deletingLastPathComponent()
         guard FileManager.default.isWritableFile(atPath: parent.path) else {
             throw UpdateInstallError.destinationNotWritable
@@ -143,28 +142,10 @@ struct UpdateInstaller {
 
     // MARK: - Signature verification
 
-    /// Confirms the app is signed by Apple's anchor with the expected bundle id
-    /// and Developer ID team, protecting against tampered or spoofed downloads.
+    /// Require the original release identity as well as a valid signature so
+    /// updates cannot introduce a build-specific TCC permission identity.
     private func verifySignature(of appURL: URL) throws {
-        var staticCode: SecStaticCode?
-        guard SecStaticCodeCreateWithPath(appURL as CFURL, [], &staticCode) == errSecSuccess,
-              let code = staticCode else {
-            throw UpdateInstallError.signatureInvalid
-        }
-
-        let requirementText =
-            "identifier \"\(Self.bundleIdentifier)\" and anchor apple generic and "
-            + "certificate leaf[subject.OU] = \"\(Self.expectedTeamID)\""
-
-        var requirement: SecRequirement?
-        guard SecRequirementCreateWithString(requirementText as CFString, [], &requirement) == errSecSuccess,
-              let req = requirement else {
-            throw UpdateInstallError.signatureInvalid
-        }
-
-        let flags = SecCSFlags(rawValue: UInt32(kSecCSCheckAllArchitectures))
-        let status = SecStaticCodeCheckValidityWithErrors(code, flags, req, nil)
-        guard status == errSecSuccess else {
+        guard ReleaseIdentity.isValid(at: appURL) else {
             throw UpdateInstallError.signatureInvalid
         }
     }

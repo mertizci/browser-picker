@@ -69,6 +69,8 @@ xcodebuild -project "$ROOT/BrowserPicker.xcodeproj" \
   -archivePath "$ARCHIVE" \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY="$DEV_ID" \
+  PRODUCT_BUNDLE_IDENTIFIER=com.browserpicker.app \
+  DEVELOPMENT_TEAM=NZDMMFNMU4 \
   MARKETING_VERSION="$VERSION" \
   OTHER_CODE_SIGN_FLAGS="--timestamp --options runtime" \
   archive
@@ -81,6 +83,13 @@ APP_PATH="$EXPORT_DIR/$APP_NAME"
 
 echo "==> Verifying code signature"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+echo "==> Verifying permission identity compatibility with v1.0.20"
+xcrun swiftc -parse-as-library \
+  "$ROOT/BrowserPicker/Update/ReleaseIdentity.swift" \
+  "$ROOT/scripts/verify-release-identity.swift" \
+  -o "$BUILD_DIR/verify-release-identity"
+"$BUILD_DIR/verify-release-identity" "$APP_PATH"
 
 echo "==> Creating ZIP for notarization"
 mkdir -p "$ROOT/build"

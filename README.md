@@ -213,6 +213,12 @@ Basic mode is remembered across restarts. It always shows a browser picker for i
 
 After granting Accessibility, **quit and reopen** Browser Picker.
 
+### Permissions after an update
+
+Official releases retain the application identifier and Developer ID signing requirement used by v1.0.20. The release build and in-app updater verify this identity so an update cannot silently replace it with a different or build-specific identity. macOS uses the signing requirement to recognize the same app across versions; a normal release update should preserve existing grants.
+
+Debug builds use a separate application identifier and settings folder, including when started directly from Xcode, so development builds do not share the release permission entry. A permission previously granted to an ad-hoc or locally re-signed build may still be tied to that exact binary. In that case, quit Browser Picker, remove the old entry from Accessibility and Full Disk Access, add the installed official app again, and reopen it. This is a one-time repair of the old entry, not a step required for each release. The app cannot migrate or grant macOS privacy permissions itself.
+
 ## Browser-specific behavior
 
 | Browser family | Profile discovery |
@@ -250,6 +256,8 @@ xcodebuild -scheme BrowserPicker -destination 'platform=macOS' -configuration De
 
 Or open `BrowserPicker.xcodeproj` in Xcode and press ⌘R. Project and signing settings are defined in `project.yml`.
 
+The Debug configuration produces **BrowserPicker Debug.app** with the isolated `com.browserpicker.debug` identifier, separate settings, and release updates disabled. Use `scripts/release.sh <version>` for distribution builds; its permission identity check must pass before notarization and packaging.
+
 Run the checks after generating the project:
 
 ```bash
@@ -257,6 +265,14 @@ scripts/test-profile-availability.sh
 ```
 
 The runner covers profile availability, rule editing, advanced conditions, source application matching, routing previews, Basic mode, and window behavior. It uses the Debug dylib and temporary configuration without launching browsers or changing your saved settings.
+
+To verify release identity compatibility against downloaded or built official releases:
+
+```bash
+scripts/test-release-identity.sh /path/to/old/BrowserPicker.app /path/to/new/BrowserPicker.app
+```
+
+This also checks that ad-hoc signatures, altered bundles, and the debug identity are rejected using disposable copies. Set `RELEASE_TEST_SIGN_IDENTITY` to a local Developer ID identity to also test a valid signature with an incompatible designated requirement. These checks do not install or launch the apps or change permissions.
 
 ### Isolated debug app
 
