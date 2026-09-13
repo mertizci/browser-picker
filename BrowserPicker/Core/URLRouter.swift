@@ -131,6 +131,6 @@ final class URLRouter: ObservableObject {
         alert.messageText = "Browser Picker"
         alert.informativeText = error.localizedDescription
         alert.alertStyle = .warning
-        alert.runModal()
+        AppWindowPresentation.shared.runModal(alert)
     }
 }

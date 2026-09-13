@@ -1,25 +1,7 @@
 import SwiftUI
 
-private enum RuleEditorContext: Identifiable {
-    case create
-    case edit(RoutingRule)
-
-    var id: String {
-        switch self {
-        case .create: return "create"
-        case .edit(let rule): return rule.id.uuidString
-        }
-    }
-
-    var existingRule: RoutingRule? {
-        if case .edit(let rule) = self { return rule }
-        return nil
-    }
-}
-
 struct RulesListView: View {
     @EnvironmentObject private var settingsStore: SettingsStore
-    @State private var editorContext: RuleEditorContext?
     @State private var ruleToDelete: RoutingRule?
     @State private var operationError: String?
 
@@ -34,7 +16,7 @@ struct RulesListView: View {
                     title: "Rules",
                     subtitle: "Route links automatically by URL pattern. First match wins.",
                     icon: "arrow.triangle.branch",
-                    action: { editorContext = .create },
+                    action: { RuleEditorWindowController.shared.show(rule: nil, settingsStore: settingsStore) },
                     actionTitle: "Add Rule",
                     actionIcon: "plus"
                 )
@@ -54,7 +36,7 @@ struct RulesListView: View {
                     Text("Create a rule like “URL contains r2o → Firefox Work”.")
                 } actions: {
                     Button("Add Rule") {
-                        editorContext = .create
+                        RuleEditorWindowController.shared.show(rule: nil, settingsStore: settingsStore)
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -66,7 +48,7 @@ struct RulesListView: View {
                             rule: rule,
                             priority: index + 1,
                             settingsStore: settingsStore,
-                            onEdit: { editorContext = .edit(rule) },
+                            onEdit: { RuleEditorWindowController.shared.show(rule: rule, settingsStore: settingsStore) },
                             onDelete: { ruleToDelete = rule },
                             onSetEnabled: { enabled in
                                 do {
@@ -81,7 +63,7 @@ struct RulesListView: View {
                         .listRowBackground(Color.clear)
                         .contextMenu {
                             Button("Edit") {
-                                editorContext = .edit(rule)
+                                RuleEditorWindowController.shared.show(rule: rule, settingsStore: settingsStore)
                             }
                             Button("Duplicate") {
                                 do {
@@ -112,17 +94,6 @@ struct RulesListView: View {
             Button("OK", role: .cancel) { operationError = nil }
         } message: {
             Text(operationError ?? "")
-        }
-        .sheet(item: $editorContext) { context in
-            RuleEditorView(rule: context.existingRule) { saved in
-                switch context {
-                case .create:
-                    settingsStore.addRule(saved)
-                case .edit:
-                    settingsStore.updateRule(saved)
-                }
-            }
-            .environmentObject(settingsStore)
         }
         .confirmationDialog(
             "Delete “\(ruleToDelete?.name ?? "")”?",

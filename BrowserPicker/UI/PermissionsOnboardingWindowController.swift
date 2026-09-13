@@ -42,8 +42,7 @@ final class PermissionsOnboardingWindowController: NSObject, NSWindowDelegate {
             window = newWindow
         }
 
-        window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppWindowPresentation.shared.show(window)
         PermissionMonitor.shared.setOnboardingActive(true)
         PermissionMonitor.shared.startPolling()
     }
@@ -65,7 +64,7 @@ final class PermissionsOnboardingWindowController: NSObject, NSWindowDelegate {
             let alert = NSAlert()
             alert.messageText = "Couldn’t Save Browser Mode"
             alert.informativeText = error.localizedDescription
-            alert.runModal()
+            AppWindowPresentation.shared.runModal(alert)
             return
         }
         dismiss()
@@ -75,7 +74,7 @@ final class PermissionsOnboardingWindowController: NSObject, NSWindowDelegate {
     func dismiss() {
         PermissionMonitor.shared.stopPolling()
         PermissionMonitor.shared.setOnboardingActive(false)
-        window?.orderOut(nil)
+        AppWindowPresentation.shared.hide(window)
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {

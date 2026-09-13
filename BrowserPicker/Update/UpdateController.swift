@@ -64,6 +64,12 @@ final class UpdateController: ObservableObject {
     /// Checks GitHub for a newer release. When `silent`, nothing is shown unless
     /// an update is actually available (used for the automatic launch check).
     func checkForUpdates(silent: Bool) {
+        guard !BuildConfiguration.isDebugPreview else {
+            if !silent {
+                finishCheck(silent: false, result: .failed("Updates are disabled in the debug preview. Build a new debug version to update it."))
+            }
+            return
+        }
         guard !isWorking else { return }
         isWorking = true
         state = .checking
@@ -104,6 +110,7 @@ final class UpdateController: ObservableObject {
     // MARK: - Download & install
 
     func startDownload(_ release: GitHubRelease) {
+        guard !BuildConfiguration.isDebugPreview else { return }
         guard !isWorking else { return }
         isWorking = true
 

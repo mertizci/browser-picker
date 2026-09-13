@@ -37,8 +37,7 @@ final class HelpWindowController: NSObject, NSWindowDelegate {
             window = newWindow
         }
 
-        window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppWindowPresentation.shared.show(window)
     }
 
     private func loadHelp(into webView: WKWebView) {

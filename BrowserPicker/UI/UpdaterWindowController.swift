@@ -25,11 +25,10 @@ final class UpdaterWindowController: NSObject, NSWindowDelegate {
             window = newWindow
         }
 
-        window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppWindowPresentation.shared.show(window)
     }
 
     func close() {
-        window?.orderOut(nil)
+        AppWindowPresentation.shared.hide(window)
     }
 }

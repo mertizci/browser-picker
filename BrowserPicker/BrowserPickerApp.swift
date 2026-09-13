@@ -42,6 +42,10 @@ enum DefaultBrowserService {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
     func application(_ application: NSApplication, open urls: [URL]) {
         let sourceApp = SourceApplicationResolver.currentBundleIdentifier()
         Task { @MainActor in
@@ -96,7 +100,7 @@ struct BrowserPickerApp: App {
                 .environmentObject(permissionMonitor)
                 .environmentObject(updateController)
         } label: {
-            Image(systemName: "arrow.triangle.branch")
+            Image(systemName: BuildConfiguration.isDebugPreview ? "ladybug" : "arrow.triangle.branch")
         }
         .menuBarExtraStyle(.window)
     }

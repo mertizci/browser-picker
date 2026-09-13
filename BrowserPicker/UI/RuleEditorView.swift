@@ -2,7 +2,6 @@ import SwiftUI
 
 struct RuleEditorView: View {
     @EnvironmentObject private var settingsStore: SettingsStore
-    @Environment(\.dismiss) private var dismiss
 
     @State private var name: String
     @State private var enabled: Bool
@@ -16,8 +15,10 @@ struct RuleEditorView: View {
     private let existingID: UUID?
     private let existingPriority: Int?
     private let onSave: (RoutingRule) -> Void
+    private let onClose: () -> Void
 
-    init(rule: RoutingRule?, onSave: @escaping (RoutingRule) -> Void) {
+    init(rule: RoutingRule?, onClose: @escaping () -> Void, onSave: @escaping (RoutingRule) -> Void) {
+        self.onClose = onClose
         existingID = rule?.id
         existingPriority = rule?.priority
         _name = State(initialValue: rule?.name ?? "")
@@ -57,103 +58,109 @@ struct RuleEditorView: View {
 
             Divider()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    rulePreview
+            GeometryReader { viewport in
+                ScrollView(.vertical) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        rulePreview
 
-                    editorSection(title: "Name", subtitle: "A clear label for this rule.", icon: "tag") {
-                        TextField("e.g. Work links → Firefox", text: $name)
-                            .textFieldStyle(.roundedBorder)
-                    }
-
-                    editorSection(title: "Match conditions", subtitle: matchMode.explanation, icon: "text.magnifyingglass") {
-                        Button {
-                            HelpWindowController.ruleMatching.show()
-                        } label: {
-                            Label("Matching help", systemImage: "questionmark.circle")
+                        editorSection(title: "Name", subtitle: "A clear label for this rule.", icon: "tag") {
+                            TextField("e.g. Work links → Firefox", text: $name)
+                                .textFieldStyle(.roundedBorder)
                         }
-                        .buttonStyle(.link)
 
-                        Picker("Match mode", selection: $matchMode) {
-                            ForEach(RuleMatchMode.allCases) { mode in
-                                Text(mode.displayName).tag(mode)
+                        editorSection(title: "Match conditions", subtitle: matchMode.explanation, icon: "text.magnifyingglass") {
+                            Button {
+                                HelpWindowController.ruleMatching.show()
+                            } label: {
+                                Label("Matching help", systemImage: "questionmark.circle")
                             }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
+                            .buttonStyle(.link)
 
-                        ForEach($conditions) { $condition in
-                            if condition.id != conditions.first?.id {
-                                Text(matchMode.conjunction)
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.secondary)
+                            Picker("Match mode", selection: $matchMode) {
+                                ForEach(RuleMatchMode.allCases) { mode in
+                                    Text(mode.displayName).tag(mode)
+                                }
                             }
-                            MatchConditionRow(
-                                matcher: $condition.matcher,
-                                number: (conditions.firstIndex { $0.id == condition.id } ?? 0) + 1,
-                                canRemove: conditions.count > 1,
-                                onRemove: { conditions.removeAll { $0.id == condition.id } }
-                            )
-                        }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
 
-                        Button {
-                            conditions.append(EditableRuleCondition(matcher: RuleMatcher(kind: .urlContains, value: "")))
-                        } label: {
-                            Label("Add Condition", systemImage: "plus")
-                        }
-                        .buttonStyle(.bordered)
-                    }
-
-                    editorSection(title: "Open in", subtitle: "Pick the browser, profile and space for matched links.", icon: "arrow.up.forward.app") {
-                        Picker("Browser", selection: $selectedBrowser) {
-                            ForEach(BrowserKind.allCases) { browser in
-                                Text(browser.displayName).tag(browser)
+                            ForEach($conditions) { $condition in
+                                if condition.id != conditions.first?.id {
+                                    Text(matchMode.conjunction)
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                }
+                                MatchConditionRow(
+                                    matcher: $condition.matcher,
+                                    number: (conditions.firstIndex { $0.id == condition.id } ?? 0) + 1,
+                                    canRemove: conditions.count > 1,
+                                    onRemove: { conditions.removeAll { $0.id == condition.id } }
+                                )
                             }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .onChange(of: selectedBrowser) { _, newValue in
-                            resolveProfileSelection(for: newValue)
+
+                            Button {
+                                conditions.append(EditableRuleCondition(matcher: RuleMatcher(kind: .urlContains, value: "")))
+                            } label: {
+                                Label("Add Condition", systemImage: "plus")
+                            }
+                            .buttonStyle(.bordered)
                         }
 
-                        if let profile = selectedProfile, !settingsStore.isProfileEnabled(profile) {
-                            Label("This rule’s profile is disabled. Choose an enabled profile or re-enable it in Browsers.", systemImage: "exclamationmark.triangle")
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
+                        editorSection(title: "Open in", subtitle: "Pick the browser, profile and space for matched links.", icon: "arrow.up.forward.app") {
+                            Picker("Browser", selection: $selectedBrowser) {
+                                ForEach(BrowserKind.allCases) { browser in
+                                    Text(browser.displayName).tag(browser)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .onChange(of: selectedBrowser) { _, newValue in
+                                resolveProfileSelection(for: newValue)
+                            }
 
-                        let profiles = settingsStore.enabledProfiles(for: selectedBrowser)
-                        if profiles.isEmpty {
-                            Label("No enabled profiles for this browser. Enable one in Settings → Browsers.", systemImage: "exclamationmark.triangle")
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                                .padding(.vertical, 4)
-                        } else {
-                            VStack(alignment: .leading, spacing: 14) {
-                                ForEach(RouteDestinationGroup.all(in: profiles)) { group in
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        if let title = group.title {
-                                            Text(title.uppercased())
-                                                .font(.caption2.weight(.bold))
-                                                .foregroundStyle(.tertiary)
-                                        }
-                                        ForEach(group.destinations) { destination in
-                                            DestinationPickerRow(
-                                                destination: destination,
-                                                isSelected: destination.target == selectedTarget,
-                                                action: {
-                                                    selectedProfileId = destination.profile.id
-                                                    selectedSpaceId = destination.space?.id
-                                                }
-                                            )
+                            if let profile = selectedProfile, !settingsStore.isProfileEnabled(profile) {
+                                Label("This rule’s profile is disabled. Choose an enabled profile or re-enable it in Browsers.", systemImage: "exclamationmark.triangle")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+
+                            let profiles = settingsStore.enabledProfiles(for: selectedBrowser)
+                            if profiles.isEmpty {
+                                Label("No enabled profiles for this browser. Enable one in Settings → Browsers.", systemImage: "exclamationmark.triangle")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                                    .padding(.vertical, 4)
+                            } else {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    ForEach(RouteDestinationGroup.all(in: profiles)) { group in
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            if let title = group.title {
+                                                Text(title.uppercased())
+                                                    .font(.caption2.weight(.bold))
+                                                    .foregroundStyle(.tertiary)
+                                            }
+                                            ForEach(group.destinations) { destination in
+                                                DestinationPickerRow(
+                                                    destination: destination,
+                                                    isSelected: destination.target == selectedTarget,
+                                                    action: {
+                                                        selectedProfileId = destination.profile.id
+                                                        selectedSpaceId = destination.space?.id
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                    // Native controls must stay within the viewport, even if their
+                    // intrinsic width changes on a new macOS release.
+                    .frame(width: max(0, viewport.size.width - 48), alignment: .leading)
+                    .padding(24)
                 }
-                .padding(24)
             }
 
             Divider()
@@ -166,7 +173,7 @@ struct RuleEditorView: View {
                         Label("Delete", systemImage: "trash")
                     }
                 }
-                Button("Cancel") { dismiss() }
+                Button("Cancel", action: onClose)
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button("Save Rule") { save() }
@@ -177,7 +184,8 @@ struct RuleEditorView: View {
             .padding(16)
             .background(Color(nsColor: .windowBackgroundColor))
         }
-        .frame(width: 500, height: 600)
+        .frame(minWidth: 480, idealWidth: 620, maxWidth: .infinity,
+               minHeight: 380, idealHeight: 680, maxHeight: .infinity)
         .onAppear {
             resolveProfileSelection()
         }
@@ -190,7 +198,7 @@ struct RuleEditorView: View {
                 if let existingID {
                     settingsStore.deleteRule(id: existingID)
                 }
-                dismiss()
+                onClose()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -348,7 +356,7 @@ struct RuleEditorView: View {
             target: selectedTarget
         )
         onSave(rule)
-        dismiss()
+        onClose()
     }
 }
 

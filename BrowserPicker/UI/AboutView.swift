@@ -82,7 +82,6 @@ final class AboutWindowController: NSObject, NSWindowDelegate {
             window = newWindow
         }
 
-        window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppWindowPresentation.shared.show(window)
     }
 }

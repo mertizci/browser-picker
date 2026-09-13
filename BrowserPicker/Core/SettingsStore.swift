@@ -25,7 +25,7 @@ final class SettingsStore: ObservableObject {
         decoder = JSONDecoder()
 
         self.configURL = configURL ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("BrowserPicker", isDirectory: true)
+            .appendingPathComponent(BuildConfiguration.settingsDirectoryName, isDirectory: true)
             .appendingPathComponent("config.json")
 
         settings = Self.loadSettings(from: self.configURL, decoder: decoder) ?? .default

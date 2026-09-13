@@ -42,11 +42,10 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             )
         }
 
-        window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppWindowPresentation.shared.show(window)
     }
 
     func hide() {
-        window?.orderOut(nil)
+        AppWindowPresentation.shared.hide(window)
     }
 }

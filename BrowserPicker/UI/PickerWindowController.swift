@@ -42,12 +42,11 @@ final class PickerWindowController: NSObject, NSWindowDelegate {
         }
 
         window?.center()
-        window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppWindowPresentation.shared.show(window)
     }
 
     func close() {
-        window?.orderOut(nil)
+        AppWindowPresentation.shared.hide(window)
     }
 
     func windowWillClose(_ notification: Notification) {
