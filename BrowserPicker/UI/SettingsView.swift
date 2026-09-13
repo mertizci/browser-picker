@@ -17,7 +17,12 @@ struct SettingsView: View {
                 case .general:
                     GeneralSettingsTab()
                 case .rules:
-                    RulesListView()
+                    if settingsStore.settings.basicMode {
+                        ContentUnavailableView("Rules Paused in Basic Mode", systemImage: "arrow.triangle.branch",
+                            description: Text("Your rules are saved. Enable Profiles and routing rules in General to use them again."))
+                    } else {
+                        RulesListView()
+                    }
                 case .browsers:
                     BrowsersSettingsTab()
                 }
@@ -140,6 +145,7 @@ private struct GeneralSettingsTab: View {
 
     var body: some View {
         SettingsDetailScaffold(title: "General", subtitle: "Control how Browser Picker handles links.", icon: "gearshape.fill") {
+            BrowserModeSettingsCard()
             if appState.isDefaultBrowser {
                 StatusBanner(
                     style: .success,
@@ -156,59 +162,61 @@ private struct GeneralSettingsTab: View {
                 )
             }
 
-            SettingsCard(
-                title: "When no rule matches",
-                subtitle: "Choose what happens for links that don't match any rule."
-            ) {
-                VStack(spacing: 8) {
-                    SettingsOptionRow(
-                        title: "Use menu bar selection",
-                        subtitle: "Open links silently in your current menu bar choice.",
-                        systemImage: "menubar.rectangle",
-                        isSelected: settingsStore.settings.fallbackMode == .silent,
-                        action: { settingsStore.setFallbackMode(.silent) }
-                    )
-                    SettingsOptionRow(
-                        title: "Show picker",
-                        subtitle: "Ask which browser and profile to use each time.",
-                        systemImage: "list.bullet.rectangle.portrait",
-                        isSelected: settingsStore.settings.fallbackMode == .picker,
-                        action: { settingsStore.setFallbackMode(.picker) }
-                    )
-                }
-            }
-
-            SettingsCard(
-                title: "Menu bar selection",
-                subtitle: "This browser and profile are used when no rule matches and fallback is silent."
-            ) {
-                if let profile = settingsStore.enabledDefaultProfile {
-                    ProfileSummaryRow(
-                        profile: profile,
-                        spaceId: settingsStore.settings.defaultTarget.spaceId
-                    )
-                    .padding(.horizontal, 4)
-                } else {
-                    HStack(spacing: 10) {
-                        Image(systemName: "questionmark.circle")
-                            .foregroundStyle(.secondary)
-                        Text("Enable a profile in Browsers to select a default.")
-                            .foregroundStyle(.secondary)
+            if !settingsStore.settings.basicMode {
+                SettingsCard(
+                    title: "When no rule matches",
+                    subtitle: "Choose what happens for links that don't match any rule."
+                ) {
+                    VStack(spacing: 8) {
+                        SettingsOptionRow(
+                            title: "Use menu bar selection",
+                            subtitle: "Open links silently in your current menu bar choice.",
+                            systemImage: "menubar.rectangle",
+                            isSelected: settingsStore.settings.fallbackMode == .silent,
+                            action: { settingsStore.setFallbackMode(.silent) }
+                        )
+                        SettingsOptionRow(
+                            title: "Show picker",
+                            subtitle: "Ask which browser and profile to use each time.",
+                            systemImage: "list.bullet.rectangle.portrait",
+                            isSelected: settingsStore.settings.fallbackMode == .picker,
+                            action: { settingsStore.setFallbackMode(.picker) }
+                        )
                     }
                 }
-            }
 
-            SettingsCard(
-                title: "Quick tip",
-                subtitle: nil
-            ) {
-                Label {
-                    Text("Change the active profile from the menu bar icon anytime.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                } icon: {
-                    Image(systemName: "lightbulb")
-                        .foregroundStyle(.yellow)
+                SettingsCard(
+                    title: "Menu bar selection",
+                    subtitle: "This browser and profile are used when no rule matches and fallback is silent."
+                ) {
+                    if let profile = settingsStore.enabledDefaultProfile {
+                        ProfileSummaryRow(
+                            profile: profile,
+                            spaceId: settingsStore.settings.defaultTarget.spaceId
+                        )
+                        .padding(.horizontal, 4)
+                    } else {
+                        HStack(spacing: 10) {
+                            Image(systemName: "questionmark.circle")
+                                .foregroundStyle(.secondary)
+                            Text("Enable a profile in Browsers to select a default.")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                SettingsCard(
+                    title: "Quick tip",
+                    subtitle: nil
+                ) {
+                    Label {
+                        Text("Change the active profile from the menu bar icon anytime.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } icon: {
+                        Image(systemName: "lightbulb")
+                            .foregroundStyle(.yellow)
+                    }
                 }
             }
         }
@@ -222,7 +230,7 @@ private struct BrowsersSettingsTab: View {
     var body: some View {
         SettingsDetailScaffold(
             title: "Browsers",
-            subtitle: "Choose which browser profiles can open links.",
+            subtitle: settingsStore.settings.basicMode ? "Choose which browsers appear in the picker." : "Choose which browser profiles can open links.",
             icon: "globe",
             action: {
                 settingsStore.reloadProfiles()
@@ -231,7 +239,7 @@ private struct BrowsersSettingsTab: View {
             actionTitle: "Refresh",
             actionIcon: "arrow.clockwise"
         ) {
-            Text("Disabled profiles are hidden from the picker and menu bar. Rules targeting them are skipped until you re-enable the profile.")
+            Text(settingsStore.settings.basicMode ? "Enable the browsers you want to see when opening a link. Each browser chooses its own profile." : "Disabled profiles are hidden from the picker and menu bar. Rules targeting them are skipped until you re-enable the profile.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -256,9 +264,9 @@ private struct BrowsersSettingsTab: View {
                 }
             }
 
-            safariPermissionsCard
+            if !settingsStore.settings.basicMode { safariPermissionsCard }
 
-            if !permissions.canReadSafariDatabase {
+            if !settingsStore.settings.basicMode && !permissions.canReadSafariDatabase {
                 SettingsCard(title: "Full Disk Access", subtitle: "Needed to read Safari profile names from disk.") {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("macOS blocks access to Safari's profile database without Full Disk Access. Add Browser Picker in System Settings → Privacy & Security → Full Disk Access, then restart the app.")
@@ -388,7 +396,7 @@ private struct BrowserProfilesCard: View {
     var body: some View {
         SettingsCard(
             title: browser.displayName,
-            subtitle: "\(profiles.count) profile\(profiles.count == 1 ? "" : "s") detected · \(profiles.filter { settingsStore.isProfileEnabled($0) }.count) enabled"
+            subtitle: settingsStore.settings.basicMode ? "Basic browser picker" : "\(profiles.count) profile\(profiles.count == 1 ? "" : "s") detected · \(profiles.filter { settingsStore.isProfileEnabled($0) }.count) enabled"
         ) {
             VStack(spacing: 0) {
                 ForEach(Array(profiles.enumerated()), id: \.element.id) { index, profile in
@@ -409,12 +417,12 @@ private struct BrowserProfilesCard: View {
                             ))
                             .toggleStyle(.switch)
                             .font(.caption)
-                            .accessibilityLabel("Enable \(browser.displayName) \(profile.displayName)")
+                            .accessibilityLabel("Enable \(profile.routeLabel())")
 
                             Button(settingsStore.customIconData(for: profile) == nil ? "Choose Icon…" : "Change Icon…") {
                                 chooseIcon(for: profile)
                             }
-                            .accessibilityLabel("Choose icon for \(browser.displayName) \(profile.displayName)")
+                            .accessibilityLabel("Choose icon for \(profile.routeLabel())")
 
                             if settingsStore.customIconData(for: profile) != nil {
                                 Button("Use Browser Icon") {
@@ -424,7 +432,7 @@ private struct BrowserProfilesCard: View {
                                         profileError = error.localizedDescription
                                     }
                                 }
-                                .accessibilityLabel("Restore browser icon for \(browser.displayName) \(profile.displayName)")
+                                .accessibilityLabel("Restore browser icon for \(profile.routeLabel())")
                             }
                         }
                         .controlSize(.small)

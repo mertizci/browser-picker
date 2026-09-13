@@ -83,9 +83,9 @@ struct PickerPromptView: View {
 
         if groups.isEmpty {
             ContentUnavailableView {
-                Label("No Enabled Profiles", systemImage: "globe")
+                Label(settingsStore.settings.basicMode ? "No Enabled Browsers" : "No Enabled Profiles", systemImage: "globe")
             } description: {
-                Text("Enable a profile in Settings → Browsers to open this link.")
+                Text(settingsStore.settings.basicMode ? "Enable a browser in Settings → Browsers to open this link." : "Enable a profile in Settings → Browsers to open this link.")
             } actions: {
                 Button("Open Settings") {
                     SettingsWindowController.shared.show(settingsStore: settingsStore, appState: .shared)

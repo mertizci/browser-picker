@@ -178,6 +178,12 @@ struct BrowserSpace: Codable, Identifiable, Hashable {
 }
 
 struct BrowserProfile: Codable, Identifiable, Hashable {
+    static func browserOnly(for browser: BrowserKind) -> BrowserProfile {
+        BrowserProfile(id: "browser-only", displayName: browser.displayName, browser: browser)
+    }
+
+    var isBrowserOnly: Bool { id == "browser-only" }
+
     var id: String
     var displayName: String
     var browser: BrowserKind
@@ -462,6 +468,7 @@ struct RoutingRule: Codable, Identifiable, Hashable {
 }
 
 struct AppSettings: Codable {
+    var basicMode: Bool
     var fallbackMode: FallbackMode
     var defaultTarget: RouteTarget
     var rules: [RoutingRule]
@@ -475,8 +482,10 @@ struct AppSettings: Codable {
         defaultTarget: RouteTarget,
         rules: [RoutingRule],
         profileIcons: [String: [String: Data]] = [:],
-        disabledProfileIDs: [String: Set<String>] = [:]
+        disabledProfileIDs: [String: Set<String>] = [:],
+        basicMode: Bool = false
     ) {
+        self.basicMode = basicMode
         self.fallbackMode = fallbackMode
         self.defaultTarget = defaultTarget
         self.rules = rules
@@ -485,11 +494,12 @@ struct AppSettings: Codable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case fallbackMode, defaultTarget, rules, profileIcons, disabledProfileIDs
+        case fallbackMode, defaultTarget, rules, profileIcons, disabledProfileIDs, basicMode
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        basicMode = try container.decodeIfPresent(Bool.self, forKey: .basicMode) ?? false
         fallbackMode = try container.decode(FallbackMode.self, forKey: .fallbackMode)
         defaultTarget = try container.decode(RouteTarget.self, forKey: .defaultTarget)
         rules = try container.decode([RoutingRule].self, forKey: .rules)

@@ -54,7 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             PermissionMonitor.shared.refresh()
             PermissionsOnboardingWindowController.shared.showIfNeeded()
 
-            if PermissionMonitor.shared.allRequiredPermissionsGranted {
+            if SettingsStore.shared.settings.basicMode || PermissionMonitor.shared.allRequiredPermissionsGranted {
                 SettingsStore.shared.reloadProfiles()
             }
 
@@ -71,7 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task { @MainActor in
             PermissionMonitor.shared.refresh()
 
-            if !PermissionMonitor.shared.allRequiredPermissionsGranted {
+            if !SettingsStore.shared.settings.basicMode && !PermissionMonitor.shared.allRequiredPermissionsGranted {
                 PermissionsOnboardingWindowController.shared.showIfNeeded()
             }
         }

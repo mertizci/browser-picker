@@ -119,7 +119,10 @@
   </div>
 
   <div class="faq-item">
-    <h2>Why does Safari need Accessibility permission?</h2>
+    <h2>Can I use Browser Picker without these permissions?</h2>
+    <p>Yes. Choose <strong>Continue Without Permissions</strong> during setup, or select <strong>Basic browser picker</strong> in <strong>Settings → General → Browser mode</strong>. This mode needs neither Full Disk Access nor Accessibility.</p>
+    <p>Every link shows one choice per installed supported browser. The selected browser opens the URL using its own current or default profile. Browser Picker skips profile discovery and automation. Routing rules and specific profiles/spaces are paused, but their settings are saved for switching back later. Basic mode stays enabled across restarts. You can hide browsers in <strong>Settings → Browsers</strong>.</p>
+    <h2>Why does Safari profile selection need Accessibility permission?</h2>
     <p>To open a link in a specific Safari profile, Browser Picker drives Safari's <em>File → New … Window</em> menu via macOS automation, which requires Accessibility access.</p>
     <p>After granting it, you must <strong>quit and reopen</strong> the app — macOS only applies Accessibility on a fresh launch.</p>
   </div>

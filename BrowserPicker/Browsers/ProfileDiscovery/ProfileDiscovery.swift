@@ -18,4 +18,8 @@ enum ProfileDiscoveryService {
     static func discoverAll() -> [BrowserProfile] {
         discoverers.flatMap { $0.discoverProfiles() }
     }
+
+    static func discoverBrowsers() -> [BrowserProfile] {
+        BrowserKind.allCases.filter(\.isInstalled).map { .browserOnly(for: $0) }
+    }
 }

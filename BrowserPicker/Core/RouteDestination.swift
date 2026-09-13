@@ -21,6 +21,7 @@ struct RouteDestination: Identifiable, Hashable {
 
     /// `nil` for a space, whose group heading already places it.
     var subtitle: String? {
+        if profile.isBrowserOnly { return nil }
         guard space == nil else { return nil }
         guard !profile.spaces.isEmpty else { return profile.browser.displayName }
         // Which profile's open space this is, since a browser with spaces can
@@ -93,6 +94,7 @@ extension BrowserProfile {
     /// targeted — the space's container and the space, which is how Zen itself
     /// nests them. Without a space it is the browser and this profile.
     func routeLabel(spaceId: String? = nil) -> String {
+        if isBrowserOnly { return browser.displayName }
         guard let space = space(id: spaceId) else {
             return "\(browser.displayName) · \(displayName)"
         }

@@ -87,7 +87,8 @@ final class PermissionMonitor: ObservableObject {
 
     func refresh() {
         let accessibility = AXIsProcessTrusted()
-        let safariDatabase = SafariProfileStore.canReadDatabase
+        let safariDatabase = (!SettingsStore.shared.settings.basicMode || isOnboardingActive)
+            ? SafariProfileStore.canReadDatabase : false
 
         isAccessibilityTrusted = accessibility
         canReadSafariDatabase = safariDatabase

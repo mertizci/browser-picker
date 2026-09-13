@@ -6,12 +6,14 @@ final class PickerWindowController: NSObject, NSWindowDelegate {
     static let shared = PickerWindowController()
 
     private var window: NSWindow?
+    private weak var urlRouter: URLRouter?
 
     private override init() {
         super.init()
     }
 
     func show(settingsStore: SettingsStore, urlRouter: URLRouter) {
+        self.urlRouter = urlRouter
         let hosting = NSHostingController(
             rootView: PickerPromptView()
                 .environmentObject(settingsStore)
@@ -49,6 +51,6 @@ final class PickerWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        URLRouter.shared.cancelPicker()
+        urlRouter?.cancelPicker()
     }
 }

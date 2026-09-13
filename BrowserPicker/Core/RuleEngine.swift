@@ -9,6 +9,7 @@ enum RoutingDecision {
 struct RuleEngine {
     /// Shared by live routing and the rule tester so fallback behavior stays identical.
     func decision(for context: RoutingContext, settings: AppSettings, hasEnabledDefault: Bool) -> RoutingDecision {
+        if settings.basicMode { return .picker }
         if let rule = matchingRule(for: context, in: settings) {
             return .rule(rule)
         }
@@ -19,7 +20,8 @@ struct RuleEngine {
     }
 
     func matchingRule(for context: RoutingContext, in settings: AppSettings) -> RoutingRule? {
-        settings.rules
+        guard !settings.basicMode else { return nil }
+        return settings.rules
             .filter(\.enabled)
             .filter { settings.isProfileEnabled(browser: $0.target.browser, profileID: $0.target.profileId) }
             .sorted { $0.priority < $1.priority }

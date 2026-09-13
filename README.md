@@ -104,7 +104,9 @@ brew install --cask mertizci/tap/browser-picker
 | **Accessibility** | Drive Safari's *File → New … Window* menu, Dia's profile menu, and Zen's *Spaces* menu, to open links in a specific profile or space. |
 | **Full Disk Access** | Read Safari profile names from the protected `SafariTabs.db`. |
 
-On first launch an onboarding window walks you through both. After granting **Accessibility**, **quit and reopen** the app — macOS only applies that permission on a fresh launch.
+On first launch, choose **Continue Without Permissions** for **Basic browser picker** mode, or grant these permissions for profile features. Basic mode shows one entry per installed supported browser and asks which browser to use for every link. It uses normal macOS URL opening: the browser chooses its current/default profile. Browser Picker does not read profile databases or run browser automation in this mode. Routing rules and profile/space selection are paused, and your existing settings are preserved.
+
+Switch modes later in **Settings → General → Browser mode**. Basic mode is remembered across restarts and does not repeat the permission setup. **Settings → Browsers** controls which browsers appear. Enabling **Profiles and routing rules** returns to permission setup when needed. After granting **Accessibility**, **quit and reopen** the app.
 
 ## Requirements
 
@@ -136,7 +138,7 @@ After generating the project, run `scripts/test-profile-availability.sh` for pro
 ## Setup
 
 1. Launch Browser Picker — the icon appears in the menu bar.
-2. Complete the onboarding (grant Accessibility + Full Disk Access).
+2. Choose **Continue Without Permissions** for a basic browser picker, or grant Accessibility + Full Disk Access for profile features.
 3. Choose **Set as Default Browser…** from the menu bar.
 4. Pick your default browser and profile.
 5. Open **Settings → Rules** to add routing rules (e.g. *URL contains `r2o` → Firefox · Work*).

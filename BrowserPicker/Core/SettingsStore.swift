@@ -14,8 +14,11 @@ final class SettingsStore: ObservableObject {
 
     private let configURL: URL
     private let discoverProfiles: () -> [BrowserProfile]
+    private let discoverBrowsers: () -> [BrowserProfile]
 
-    init(configURL: URL? = nil, discoverProfiles: @escaping () -> [BrowserProfile] = ProfileDiscoveryService.discoverAll) {
+    init(configURL: URL? = nil, discoverProfiles: @escaping () -> [BrowserProfile] = ProfileDiscoveryService.discoverAll,
+         discoverBrowsers: @escaping () -> [BrowserProfile] = ProfileDiscoveryService.discoverBrowsers) {
+        self.discoverBrowsers = discoverBrowsers
         self.discoverProfiles = discoverProfiles
         encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -29,6 +32,10 @@ final class SettingsStore: ObservableObject {
     }
 
     func reloadProfiles() {
+        if settings.basicMode {
+            profiles = discoverBrowsers()
+            return
+        }
         profiles = discoverProfiles()
         migrateLegacySafariTargets()
         ensureDefaultTargetIsValid()
@@ -37,6 +44,7 @@ final class SettingsStore: ObservableObject {
 
     /// Re-read Safari profiles from the menu while Safari is open.
     func rescanSafariProfilesFromMenu() {
+        guard !settings.basicMode else { return }
         guard SafariRuntime.isRunning else { return }
 
         var safariProfiles = profiles.filter { $0.browser != .safari }
@@ -99,6 +107,7 @@ final class SettingsStore: ObservableObject {
     }
 
     var enabledDefaultProfile: BrowserProfile? {
+        guard !settings.basicMode else { return nil }
         guard let profile = profile(for: settings.defaultTarget), isProfileEnabled(profile) else { return nil }
         return profile
     }
@@ -146,6 +155,7 @@ final class SettingsStore: ObservableObject {
     }
 
     func setDefaultTarget(_ target: RouteTarget) {
+        guard !settings.basicMode else { return }
         guard let profile = profile(for: target), isProfileEnabled(profile) else { return }
         updateSettings { $0.defaultTarget = target }
     }
@@ -266,6 +276,7 @@ final class SettingsStore: ObservableObject {
     }
 
     private func updateDefaultTarget(in settings: inout AppSettings) {
+        guard !settings.basicMode else { return }
         if let current = profile(for: settings.defaultTarget),
            settings.isProfileEnabled(browser: current.browser, profileID: current.id) { return }
 
@@ -279,5 +290,14 @@ final class SettingsStore: ObservableObject {
     private static func loadSettings(from url: URL, decoder: JSONDecoder) -> AppSettings? {
         guard let data = try? Data(contentsOf: url) else { return nil }
         return try? decoder.decode(AppSettings.self, from: data)
+    }
+
+    /// Keep profile rules, availability and the previous default intact when switching modes.
+    func setBasicMode(_ enabled: Bool) throws {
+        var updated = settings
+        updated.basicMode = enabled
+        try persist(updated)
+        settings = updated
+        reloadProfiles()
     }
 }

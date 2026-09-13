@@ -38,8 +38,13 @@ struct MenuBarContentView: View {
                     .padding(12)
             } else {
                 VStack(alignment: .leading, spacing: 2) {
-                    sectionLabel("Switch Profile")
-                    profileMenus
+                    if settingsStore.settings.basicMode {
+                        Text("Choose a browser whenever you open a link.")
+                            .font(.caption).foregroundStyle(.secondary).padding(8)
+                    } else {
+                        sectionLabel("Switch Profile")
+                        profileMenus
+                    }
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 8)
@@ -82,10 +87,10 @@ struct MenuBarContentView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(activeProfileLabel ?? "Browser Picker")
+                Text(settingsStore.settings.basicMode ? "Basic browser picker" : (activeProfileLabel ?? "Browser Picker"))
                     .font(.system(size: 14, weight: .semibold))
                     .lineLimit(1)
-                Text(activeProfile.map { "\($0.browser.displayName) · active" } ?? "No profile selected")
+                Text(settingsStore.settings.basicMode ? "No profile permissions needed" : (activeProfile.map { "\($0.browser.displayName) · active" } ?? "No profile selected"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -101,14 +106,14 @@ struct MenuBarContentView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Finish setup")
                     .font(.subheadline.weight(.medium))
-                Text("Grant permissions to continue.")
+                Text("Choose Basic mode or enable profile features.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
             Button("Open") {
                 dismiss()
-                PermissionsOnboardingWindowController.shared.showIfNeeded()
+                PermissionsOnboardingWindowController.shared.showIfNeeded(forProfileSetup: settingsStore.settings.basicMode)
             }
             .controlSize(.small)
         }

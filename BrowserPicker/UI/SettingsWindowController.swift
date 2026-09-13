@@ -13,7 +13,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     func show(settingsStore: SettingsStore, appState: AppState) {
         if PermissionMonitor.shared.isOnboardingActive {
-            PermissionsOnboardingWindowController.shared.showIfNeeded()
+            PermissionsOnboardingWindowController.shared.showIfNeeded(forProfileSetup: settingsStore.settings.basicMode)
             return
         }
 

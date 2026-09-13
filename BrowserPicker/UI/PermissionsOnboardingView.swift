@@ -3,10 +3,24 @@ import SwiftUI
 struct PermissionsOnboardingView: View {
     @ObservedObject var permissions: PermissionMonitor
     var onContinue: () -> Void
+    var onContinueBasic: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             header
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Just want to choose a browser?").font(.headline)
+                Text("Basic mode asks which browser to use for each link. No Full Disk Access or Accessibility is needed. The browser chooses its own profile; routing rules and spaces are paused.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Continue Without Permissions", action: onContinueBasic)
+                    .buttonStyle(.borderedProminent)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Add this app in System Settings")
@@ -79,11 +93,6 @@ struct PermissionsOnboardingView: View {
         .onDisappear {
             permissions.stopPolling()
         }
-        .onChange(of: permissions.refreshCount) {
-            if permissions.allRequiredPermissionsGranted {
-                onContinue()
-            }
-        }
     }
 
     private var grantedCount: Int {
@@ -100,7 +109,7 @@ struct PermissionsOnboardingView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text("Welcome to Browser Picker")
                     .font(.title2.weight(.semibold))
-                Text("Grant the permissions below so links open in the right browser profile.")
+                Text("Use Basic mode, or enable the permissions below for profile features.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

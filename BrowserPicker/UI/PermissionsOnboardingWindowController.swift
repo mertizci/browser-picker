@@ -11,19 +11,24 @@ final class PermissionsOnboardingWindowController: NSObject, NSWindowDelegate {
         super.init()
     }
 
-    func showIfNeeded() {
+    func showIfNeeded(forProfileSetup: Bool = false) {
+        if SettingsStore.shared.settings.basicMode && !forProfileSetup {
+            dismiss()
+            return
+        }
+        PermissionMonitor.shared.setOnboardingActive(true)
         PermissionMonitor.shared.refresh()
 
         guard !PermissionMonitor.shared.allRequiredPermissionsGranted else {
-            dismiss()
+            completeOnboarding()
             return
         }
 
         if window == nil {
             let permissions = PermissionMonitor.shared
-            let content = PermissionsOnboardingView(permissions: permissions) { [weak self] in
+            let content = PermissionsOnboardingView(permissions: permissions, onContinue: { [weak self] in
                 self?.completeOnboarding()
-            }
+            }, onContinueBasic: { [weak self] in self?.continueInBasicMode() })
 
             let hosting = NSHostingController(rootView: content)
             let newWindow = NSWindow(contentViewController: hosting)
@@ -46,11 +51,25 @@ final class PermissionsOnboardingWindowController: NSObject, NSWindowDelegate {
     func completeOnboarding() {
         guard PermissionMonitor.shared.allRequiredPermissionsGranted else { return }
 
-        PermissionMonitor.shared.stopPolling()
-        PermissionMonitor.shared.setOnboardingActive(false)
-        PermissionMonitor.shared.refresh()
-        SettingsStore.shared.reloadProfiles()
+        finish(basicMode: false)
+    }
+
+    func continueInBasicMode() {
+        finish(basicMode: true)
+    }
+
+    private func finish(basicMode: Bool) {
+        do {
+            try SettingsStore.shared.setBasicMode(basicMode)
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Couldn’t Save Browser Mode"
+            alert.informativeText = error.localizedDescription
+            alert.runModal()
+            return
+        }
         dismiss()
+        URLRouter.shared.resumeAfterSetup()
     }
 
     func dismiss() {
@@ -60,6 +79,6 @@ final class PermissionsOnboardingWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        PermissionMonitor.shared.allRequiredPermissionsGranted
+        SettingsStore.shared.settings.basicMode || PermissionMonitor.shared.allRequiredPermissionsGranted
     }
 }

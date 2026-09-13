@@ -236,7 +236,8 @@ struct ProfileSummaryRow: View {
     }
 
     private var subtitle: String {
-        [profile.browser.displayName, profile.space(id: spaceId)?.nestedLabel ?? detail]
+        if profile.isBrowserOnly { return "Uses the browser’s current or default profile" }
+        return [profile.browser.displayName, profile.space(id: spaceId)?.nestedLabel ?? detail]
             .compactMap { $0 }
             .joined(separator: " · ")
     }

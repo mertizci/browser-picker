@@ -32,6 +32,9 @@ enum RuleTester {
     /// A read-only preview: no discovery, persistence, picker, or browser launch.
     @MainActor
     static func test(url: URL, store: SettingsStore, sourceApp: String? = nil) -> RuleTestResult {
+        if store.settings.basicMode {
+            return RuleTestResult(title: "Browser picker would open", detail: "Basic mode asks you to choose a browser. Profile routing rules are paused.", isWarning: store.enabledProfiles.isEmpty)
+        }
         let decision = RuleEngine().decision(
             for: RoutingContext(url: url, sourceApp: sourceApp),
             settings: store.settings,
