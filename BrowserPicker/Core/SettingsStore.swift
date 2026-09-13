@@ -169,6 +169,35 @@ final class SettingsStore: ObservableObject {
         }
     }
 
+    func setRuleEnabled(_ enabled: Bool, id: UUID) throws {
+        var updated = settings
+        guard let index = updated.rules.firstIndex(where: { $0.id == id }) else { return }
+        updated.rules[index].enabled = enabled
+        try persist(updated)
+        settings = updated
+    }
+
+    func duplicateRule(id: UUID) throws {
+        var updated = settings
+        updated.rules.sort { $0.priority < $1.priority }
+        guard let index = updated.rules.firstIndex(where: { $0.id == id }) else { return }
+        var copy = updated.rules[index]
+        copy.id = UUID()
+        let baseName = "\(copy.name) Copy"
+        copy.name = baseName
+        var suffix = 2
+        while updated.rules.contains(where: { $0.name == copy.name }) {
+            copy.name = "\(baseName) \(suffix)"
+            suffix += 1
+        }
+        updated.rules.insert(copy, at: index + 1)
+        for index in updated.rules.indices {
+            updated.rules[index].priority = index
+        }
+        try persist(updated)
+        settings = updated
+    }
+
     func deleteRule(id: UUID) {
         updateSettings { settings in
             settings.rules.removeAll { $0.id == id }

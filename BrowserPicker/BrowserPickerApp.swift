@@ -43,8 +43,9 @@ enum DefaultBrowserService {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
+        let sourceApp = SourceApplicationResolver.currentBundleIdentifier()
         Task { @MainActor in
-            URLRouter.shared.handleOpenURLs(urls)
+            URLRouter.shared.handleOpenURLs(urls, sourceApp: sourceApp)
         }
     }
 

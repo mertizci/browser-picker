@@ -216,7 +216,7 @@ struct MenuBarContentView: View {
 
         MenuRow(title: "FAQ", systemImage: "questionmark.circle") {
             dismiss()
-            FAQWindowController.shared.show()
+            HelpWindowController.faq.show()
         }
 
         MenuRow(title: "About", systemImage: "info.circle") {

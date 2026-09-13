@@ -21,6 +21,7 @@ struct RulesListView: View {
     @EnvironmentObject private var settingsStore: SettingsStore
     @State private var editorContext: RuleEditorContext?
     @State private var ruleToDelete: RoutingRule?
+    @State private var operationError: String?
 
     private var sortedRules: [RoutingRule] {
         settingsStore.settings.rules.sorted { $0.priority < $1.priority }
@@ -42,6 +43,10 @@ struct RulesListView: View {
             .padding(.top, 28)
             .padding(.bottom, 12)
 
+            RuleTesterView()
+                .padding(.horizontal, 28)
+                .padding(.bottom, 12)
+
             if sortedRules.isEmpty {
                 ContentUnavailableView {
                     Label("No Rules Yet", systemImage: "arrow.triangle.branch")
@@ -62,7 +67,14 @@ struct RulesListView: View {
                             priority: index + 1,
                             settingsStore: settingsStore,
                             onEdit: { editorContext = .edit(rule) },
-                            onDelete: { ruleToDelete = rule }
+                            onDelete: { ruleToDelete = rule },
+                            onSetEnabled: { enabled in
+                                do {
+                                    try settingsStore.setRuleEnabled(enabled, id: rule.id)
+                                } catch {
+                                    operationError = error.localizedDescription
+                                }
+                            }
                         )
                         .listRowInsets(EdgeInsets(top: 5, leading: 28, bottom: 5, trailing: 28))
                         .listRowSeparator(.hidden)
@@ -70,6 +82,13 @@ struct RulesListView: View {
                         .contextMenu {
                             Button("Edit") {
                                 editorContext = .edit(rule)
+                            }
+                            Button("Duplicate") {
+                                do {
+                                    try settingsStore.duplicateRule(id: rule.id)
+                                } catch {
+                                    operationError = error.localizedDescription
+                                }
                             }
                             Button("Delete", role: .destructive) {
                                 ruleToDelete = rule
@@ -86,6 +105,14 @@ struct RulesListView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
+        .alert("Couldn’t Update Rule", isPresented: Binding(
+            get: { operationError != nil },
+            set: { if !$0 { operationError = nil } }
+        )) {
+            Button("OK", role: .cancel) { operationError = nil }
+        } message: {
+            Text(operationError ?? "")
+        }
         .sheet(item: $editorContext) { context in
             RuleEditorView(rule: context.existingRule) { saved in
                 switch context {
@@ -126,6 +153,7 @@ private struct RuleCardView: View {
     @ObservedObject var settingsStore: SettingsStore
     let onEdit: () -> Void
     let onDelete: () -> Void
+    let onSetEnabled: (Bool) -> Void
     @State private var isHovered = false
 
     var body: some View {
@@ -155,14 +183,23 @@ private struct RuleCardView: View {
                             }
                         }
 
-                        HStack(spacing: 6) {
-                            Image(systemName: matcherIcon)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text("\(rule.matcher.kind.displayName): \(rule.matcher.value)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 3) {
+                            if rule.matchers.count > 1 {
+                                Text(rule.matchMode == .any ? "Matches any condition" : "Matches all conditions")
+                                    .font(.caption2.weight(.medium))
+                            }
+                            ForEach(Array(rule.matchers.prefix(2).enumerated()), id: \.offset) { _, matcher in
+                                Label(matcher.summary, systemImage: matcherIcon(for: matcher.kind))
+                                    .font(.caption)
+                                    .lineLimit(1)
+                            }
+                            if rule.matchers.count > 2 {
+                                Text("+\(rule.matchers.count - 2) more conditions")
+                                    .font(.caption2)
+                            }
                         }
+                        .foregroundStyle(.secondary)
+                        .help(rule.matchers.map(\.summary).joined(separator: "\n\(rule.matchMode.conjunction) "))
 
                         destinationRow
                     }
@@ -172,6 +209,13 @@ private struct RuleCardView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+
+            Toggle("Enabled", isOn: Binding(get: { rule.enabled }, set: onSetEnabled))
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .labelsHidden()
+                .accessibilityLabel("Enable rule \(rule.name)")
+                .help(rule.enabled ? "Disable rule" : "Enable rule")
 
             if isHovered {
                 Button(action: onDelete) {
@@ -226,11 +270,14 @@ private struct RuleCardView: View {
         }
     }
 
-    private var matcherIcon: String {
-        switch rule.matcher.kind {
+    private func matcherIcon(for kind: RuleMatcherKind) -> String {
+        switch kind {
         case .urlContains: return "text.magnifyingglass"
         case .hostEquals: return "equal"
         case .hostSuffix: return "globe"
+        case .pathEquals, .pathPrefix, .pathContains: return "folder"
+        case .urlRegex: return "asterisk"
+        case .sourceApplication: return "app"
         }
     }
 }

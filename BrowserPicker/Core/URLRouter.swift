@@ -39,16 +39,16 @@ final class URLRouter: ObservableObject {
         let context = RoutingContext(url: url, sourceApp: sourceApp)
         let settings = settingsStore.settings
 
-        if ruleEngine.matchingRule(for: context, in: settings) == nil,
-           settings.fallbackMode == .picker || settingsStore.enabledDefaultProfile == nil {
+        switch ruleEngine.decision(for: context, settings: settings, hasEnabledDefault: settingsStore.enabledDefaultProfile != nil) {
+        case .picker:
             pendingPickerURL = url
             pendingPickerContext = context
             PickerWindowController.shared.show(settingsStore: settingsStore, urlRouter: self)
-            return
+        case .rule(let rule):
+            open(url: url, target: rule.target)
+        case .defaultTarget(let target):
+            open(url: url, target: target)
         }
-
-        let target = ruleEngine.resolveTarget(for: context, settings: settings)
-        open(url: url, target: target)
     }
 
     func completePickerSelection(url: URL, target: RouteTarget) {

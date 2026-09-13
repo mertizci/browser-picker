@@ -42,6 +42,8 @@ Juggling a personal Chrome, a work Chrome profile, and Firefox for clients? Stop
 
 <p align="center"><em><b>Rules</b> — route links by URL pattern. First match wins, and you can drag to reorder.</em></p>
 
+Use **Add Condition** in the rule editor to group multiple URLs or domains under one rule. Choose **Any (OR)** to match any condition or **All (AND)** to require every condition to match the same link. For example, use OR for two different domains, or AND for a specific domain plus a URL containing `/work/`. Each condition can use URL contains, Host equals, Host suffix, Path equals, Path starts with, Path contains, or URL regex. Check **NOT** to invert a condition. Open **Matching help** in the editor for an offline guide with examples and AND/OR/NOT explanations. Right-click a rule and choose **Duplicate** to create an independent copy directly below it, including its match mode. Use the switch beside the row actions to enable or disable a rule without opening the editor. Existing rules keep OR behavior.
+
 <p align="center">
 <img src="docs/assets/shots/settings.png" width="820" alt="General pane showing default browser status and fallback behaviour options" />
 </p>
@@ -127,7 +129,7 @@ open ~/Library/Developer/Xcode/DerivedData/BrowserPicker-*/Build/Products/Debug/
 
 Or open `BrowserPicker.xcodeproj` in Xcode and press ⌘R.
 
-After generating the project, run `scripts/test-profile-availability.sh` for profile filtering, routing, and persistence checks. The runner uses Xcode's Debug dylib and temporary settings; it does not launch browsers or change your saved configuration.
+After generating the project, run `scripts/test-profile-availability.sh` for profile filtering, rule editing, routing, and persistence checks. The runner uses Xcode's Debug dylib and temporary settings; it does not launch browsers or change your saved configuration.
 
 > Signing is configured in `project.yml` (`CODE_SIGN_IDENTITY`). Ad-hoc signatures change on every build and break the Accessibility grant, so a real "Apple Development" identity is recommended.
 
@@ -138,8 +140,11 @@ After generating the project, run `scripts/test-profile-availability.sh` for pro
 3. Choose **Set as Default Browser…** from the menu bar.
 4. Pick your default browser and profile.
 5. Open **Settings → Rules** to add routing rules (e.g. *URL contains `r2o` → Firefox · Work*).
+6. In **Rule tester**, enter a full `https://` or `http://` URL and click **Test Rule** (or press Return). It previews the first matching saved rule and its browser, profile, and space without opening the link. If nothing matches, it shows whether your menu bar selection or the picker will be used. Disabled rules and profiles are skipped. Results clear when you change the URL, settings, or discovered profiles; test again to see the updated decision. **Matching help** opens the offline guide.
 
 ## Configuration
+
+To route by the app a link comes from, add a **Source application** condition in the rule editor. **Choose Application…** opens an icon list that filters as you type; select by mouse or with the arrow keys and Return. Combine it with a domain/path using **All (AND)**, or match several apps using **Any (OR)**. The tester has the same source selector. The app’s bundle identifier is saved. If macOS cannot identify the sender (including some helper-mediated links), source conditions do not match, even with NOT; ordinary URL rules and fallback still apply.
 
 Settings are stored as JSON at:
 

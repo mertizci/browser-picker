@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser Picker — Matching Help</title>
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#1d1d1f; --muted:#606068; --card:#f5f5f7; --border:#d7d7dc; --accent:#0066cc; }
+  @media(prefers-color-scheme:dark) { :root { --bg:#1e1e1e; --fg:#f5f5f7; --muted:#b0b0b8; --card:#29292c; --border:#49494e; --accent:#69b2ff; } }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:28px; font:15px/1.6 -apple-system,BlinkMacSystemFont,sans-serif; color:var(--fg); background:var(--bg); }
+  h1 { margin:0; font-size:27px; } h2 { font-size:20px; margin:0 0 12px; } h3 { font-size:16px; margin:18px 0 6px; }
+  p { margin:8px 0 14px; } a { color:var(--accent); } a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+  nav { display:flex; flex-wrap:wrap; gap:8px 16px; margin:20px 0; }
+  section { padding:20px; margin:18px 0; border:1px solid var(--border); border-radius:12px; background:var(--card); }
+  code { font:0.92em ui-monospace,Menlo,monospace; overflow-wrap:anywhere; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; border:1px solid var(--border); border-radius:8px; }
+  .muted { color:var(--muted); } ul,ol { padding-left:22px; } li { margin:6px 0; }
+  table { width:100%; border-collapse:collapse; font-size:14px; } th,td { text-align:left; vertical-align:top; padding:10px 6px; border-bottom:1px solid var(--border); }
+  th:first-child { width:32%; } .recipe { border-left:3px solid var(--accent); padding-left:14px; }
+</style>
+</head>
+<body>
+<header id="top">
+  <h1>Matching help</h1>
+  <p class="muted">Choose which links a rule opens, with examples you can copy. This guide is available offline.</p>
+</header>
+<nav aria-label="Guide sections">
+  <a href="#quick-start">Quick start</a><a href="#tester">Rule tester</a><a href="#types">Condition types</a><a href="#logic">AND, OR &amp; NOT</a><a href="#recipes">Examples</a><a href="#regex">Regex</a><a href="#troubleshooting">Troubleshooting</a>
+</nav>
+<main>
+<section id="quick-start">
+  <h2>Quick start</h2>
+  <ol>
+    <li>Open <strong>Settings → Rules → Add Rule</strong>, or edit an existing rule.</li>
+    <li>Under <strong>Match conditions</strong>, choose <strong>Any (OR)</strong> or <strong>All (AND)</strong>.</li>
+    <li>Choose a condition type from the dropdown and enter its value. Use <strong>Add Condition</strong> for another condition, or the minus button to remove one.</li>
+    <li>Check <strong>NOT</strong> to invert an individual condition.</li>
+    <li>Choose an enabled browser profile and click <strong>Save Rule</strong>.</li>
+  </ol>
+  <p>Rules run in list order: the first matching enabled rule wins. Disabled rules and rules targeting disabled profiles are skipped. If no rule matches, your configured fallback handles the link.</p>
+</section>
+<section id="tester">
+  <h2>Test a URL without opening it</h2>
+  <ol>
+    <li>Save your rule, then find <strong>Rule tester</strong> at the top of <strong>Settings → Rules</strong>.</li>
+    <li>Paste a full URL, such as <code>https://example.com/work/project</code>. Include <code>https://</code> or <code>http://</code>.</li>
+    <li>Optionally choose a <strong>Source application</strong> to simulate a link sent by that app. Leave it as <strong>Unknown / not provided</strong> to test without source information.</li>
+    <li>Click <strong>Test Rule</strong> or press Return. The result shows the first matching saved rule, the browser and profile, and the space when applicable.</li>
+  </ol>
+  <p>Disabled rules and rules targeting disabled profiles are skipped, just as when opening a real link. If no rule matches, the result explains whether your menu bar selection would be used or the browser picker would open. If a matched rule’s profile is missing, update its destination; routing would fail instead of falling back.</p>
+  <p>The tester never opens the link or changes your settings. It previews the routing decision; it does not check browser launch permissions. A missing saved space uses the current space. Changing the URL, settings or detected profiles clears the result: click <strong>Test Rule</strong> again to refresh it.</p>
+</section>
+<section id="types">
+  <h2>Condition types</h2>
+  <table>
+    <thead><tr><th scope="col">Condition</th><th scope="col">What it checks</th></tr></thead>
+    <tbody>
+      <tr><td>URL contains</td><td>Text anywhere in the full URL, including query parameters and fragments. Case-insensitive. Example: <code>project=work</code>.</td></tr>
+      <tr><td>Host equals</td><td>The exact hostname, without scheme, port or path. Case-insensitive. <code>example.com</code> does not match <code>docs.example.com</code>.</td></tr>
+      <tr><td>Host suffix</td><td>A hostname ending in the supplied text, ignoring case and optional leading/trailing dots. This is a literal suffix: <code>example.com</code> also matches <code>notexample.com</code>. For a domain and its subdomains only, use the regex example below.</td></tr>
+      <tr><td>Path equals</td><td>The entire decoded path, including trailing slashes. <code>/dashboard</code> matches <code>https://example.com/dashboard?tab=work</code>, but not <code>/dashboard/</code>.</td></tr>
+      <tr><td>Path starts with</td><td>A decoded path beginning with the value. <code>/work/</code> matches <code>/work/report</code>, but not <code>/workspace</code> or <code>/work</code>.</td></tr>
+      <tr><td>Path contains</td><td>Text anywhere in the decoded path. <code>/invoices/</code> matches <code>/accounts/invoices/42</code>.</td></tr>
+      <tr><td>URL regex</td><td>A regular expression searched against the full URL, including its query and fragment. Case-sensitive by default. See the examples below.</td></tr>
+      <tr><td>Source application</td><td>The macOS application that sent the link. Click <strong>Choose Application…</strong> and type to filter installed apps by name or bundle identifier. Select a result with its icon, or use the arrow keys and Return. The rule saves the app’s bundle identifier, so renaming or moving an app does not change the match.</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Path conditions</strong> ignore the domain, query string and fragment. They are case-sensitive: <code>/Work/</code> differs from <code>/work/</code>. Path equals and Path starts with must begin with <code>/</code>. A URL with no path is treated as <code>/</code>.</p>
+  <p>Paths decode percent escapes: enter <code>/my files/</code> to match a path containing <code>/my%20files/</code>. URL contains and URL regex use the full URL representation, so use percent-encoded text there when appropriate.</p>
+</section>
+<section id="logic">
+  <h2>AND, OR &amp; NOT</h2>
+  <ul>
+    <li><strong>Any (OR):</strong> at least one condition must match. Use this for several alternative domains.</li>
+    <li><strong>All (AND):</strong> every condition must match the same link. Use this for a particular domain and path.</li>
+    <li><strong>NOT:</strong> inverts only the condition beside the checkbox. A matching path becomes an exclusion; the other conditions keep their own meaning.</li>
+  </ul>
+  <p>To restrict a domain and exclude a path, choose <strong>All (AND)</strong>. With OR, a NOT condition can match most links outside that path, even on other domains.</p>
+  <p>The selected mode applies to the whole condition list. Nested groups such as <code>(A OR B) AND C</code> are not supported in a single rule; use separate rules for each domain with the same exclusion.</p>
+</section>
+<section id="recipes">
+  <h2>Examples</h2>
+  <h3>Work links from Mail</h3>
+  <p class="recipe">Mode: <strong>All (AND)</strong><br>Source application: <strong>Mail</strong><br>Host equals: <code>example.com</code></p>
+  <p>Only links to this domain sent by Mail open in the chosen work profile. Use <strong>Any (OR)</strong> with several source application conditions to match links from any of those apps.</p>
+  <p>Source information comes from the sending macOS event. Some apps open links through helpers or intermediaries, and some senders cannot be identified. An unknown source matches neither a Source application condition nor its <strong>NOT</strong> version. URL-only rules and your fallback still work. The frontmost application is not used as a guess.</p>
+  <div class="recipe">
+    <h3>Two work domains</h3>
+    <p>Mode: <strong>Any (OR)</strong><br>Host equals: <code>gitlab.example.com</code><br>Host equals: <code>jira.example.com</code></p>
+    <p>Either domain opens in the selected work profile.</p>
+  </div>
+  <div class="recipe">
+    <h3>Only the work section</h3>
+    <p>Mode: <strong>All (AND)</strong><br>Host equals: <code>example.com</code><br>Path starts with: <code>/work/</code></p>
+    <p>Matches <code>https://example.com/work/report</code>. Does not match <code>https://other.com/work/report</code> or <code>https://example.com/personal/</code>.</p>
+  </div>
+  <div class="recipe">
+    <h3>A domain except its personal section</h3>
+    <p>Mode: <strong>All (AND)</strong><br>Host equals: <code>example.com</code><br><strong>NOT</strong> Path starts with: <code>/personal/</code><br><strong>NOT</strong> Path equals: <code>/personal</code></p>
+    <p>Both exclusions are needed to cover the section itself and everything beneath it. Other domains do not match.</p>
+  </div>
+</section>
+<section id="regex">
+  <h2>Regular expressions</h2>
+  <p>Choose <strong>URL regex</strong> and enter the pattern directly. Do not wrap it in JavaScript-style <code>/pattern/</code> delimiters. Browser Picker uses Foundation’s <code>NSRegularExpression</code> syntax.</p>
+  <p>A pattern can match part of the URL. Use <code>^</code> to anchor its beginning and <code>$</code> for the end. Escape literal dots as <code>\.</code>. Add <code>(?i)</code> at the beginning for case-insensitive matching.</p>
+  <h3>Work or admin section on one domain</h3>
+  <pre><code>^https://example\.com/(work|admin)(/|[?#]|$)</code></pre>
+  <p>Matches <code>https://example.com/work/report</code> and <code>https://example.com/admin?tab=users</code>, but not <code>https://example.com/workspace</code>.</p>
+  <h3>A domain and its subdomains</h3>
+  <pre><code>(?i)^https?://([a-z0-9-]+\.)*example\.com(:[0-9]+)?(/|[?#]|$)</code></pre>
+  <p>Matches <code>example.com</code> and <code>docs.example.com</code>, including an optional port. Does not match <code>notexample.com</code>.</p>
+  <h3>PDF links</h3>
+  <pre><code>(?i)\.pdf([?#]|$)</code></pre>
+  <p>Matches a full URL ending in <code>.pdf</code>, optionally followed by a query or fragment. Since regex checks the entire URL, this can also match text inside a query value.</p>
+  <p>Invalid expressions show an error in the editor and cannot be saved. Expressions that fail or are interrupted for taking too long are treated as non-matches, even with NOT.</p>
+</section>
+<section id="troubleshooting">
+  <h2>Why did my rule not match?</h2>
+  <ul>
+    <li>Check that both the rule and its destination profile are enabled.</li>
+    <li>An earlier rule may already match the link. Drag rules to change their priority.</li>
+    <li>Two different Host equals conditions cannot both match one link under AND; use OR.</li>
+    <li>Check path case and trailing slashes. Path conditions do not look in query parameters.</li>
+    <li>Every condition needs a valid value. A new empty condition keeps Save Rule disabled until filled or removed.</li>
+    <li>Use <strong>Matching help</strong> in the editor to reopen this guide without closing your draft.</li>
+  </ul>
+  <p><a href="#top">Back to top</a></p>
+</section>
+</main>
+</body>
+</html>

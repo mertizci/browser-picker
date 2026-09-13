@@ -249,6 +249,11 @@ enum RuleMatcherKind: String, Codable, CaseIterable, Identifiable {
     case urlContains
     case hostEquals
     case hostSuffix
+    case pathEquals
+    case pathPrefix
+    case pathContains
+    case urlRegex
+    case sourceApplication
 
     var id: String { rawValue }
 
@@ -257,6 +262,11 @@ enum RuleMatcherKind: String, Codable, CaseIterable, Identifiable {
         case .urlContains: return "URL contains"
         case .hostEquals: return "Host equals"
         case .hostSuffix: return "Host suffix"
+        case .pathEquals: return "Path equals"
+        case .pathPrefix: return "Path starts with"
+        case .pathContains: return "Path contains"
+        case .urlRegex: return "URL regex"
+        case .sourceApplication: return "Source application"
         }
     }
 }
@@ -264,21 +274,124 @@ enum RuleMatcherKind: String, Codable, CaseIterable, Identifiable {
 struct RuleMatcher: Codable, Hashable {
     var kind: RuleMatcherKind
     var value: String
+    var isNegated: Bool
+    var applicationName: String?
+
+    init(kind: RuleMatcherKind, value: String, isNegated: Bool = false, applicationName: String? = nil) {
+        self.kind = kind
+        self.value = value
+        self.isNegated = isNegated
+        self.applicationName = applicationName
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case kind, value, isNegated, applicationName
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try container.decode(RuleMatcherKind.self, forKey: .kind)
+        value = try container.decode(String.self, forKey: .value)
+        isNegated = try container.decodeIfPresent(Bool.self, forKey: .isNegated) ?? false
+        applicationName = try container.decodeIfPresent(String.self, forKey: .applicationName)
+    }
+
+    var normalizedValue: String {
+        kind == .urlRegex ? value : value.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var summary: String {
+        "\(isNegated ? "NOT " : "")\(kind.displayName): \(kind == .sourceApplication ? (applicationName ?? normalizedValue) : normalizedValue)"
+    }
+
+    var isValid: Bool {
+        validationMessage == nil
+    }
+
+    var validationMessage: String? {
+        guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return "Enter a value." }
+        switch kind {
+        case .sourceApplication:
+            if normalizedValue.rangeOfCharacter(from: .whitespacesAndNewlines) != nil {
+                return "Choose an application from the list."
+            }
+        case .hostSuffix:
+            if normalizedValue.trimmingCharacters(in: CharacterSet(charactersIn: ".")).isEmpty {
+                return "Enter a domain, such as company.com."
+            }
+        case .pathEquals, .pathPrefix:
+            if !normalizedValue.hasPrefix("/") { return "Start the path with /, for example /work/." }
+        case .urlRegex:
+            if (try? NSRegularExpression(pattern: value)) == nil { return "Invalid regular expression. See Matching help for examples." }
+        default: break
+        }
+        return nil
+    }
 
     func matches(url: URL, sourceApp: String?) -> Bool {
+        guard isValid else { return false }
         let urlString = url.absoluteString.lowercased()
         let host = (url.host ?? "").lowercased()
-        let valueLower = value.lowercased()
+        let valueLower = normalizedValue.lowercased()
+        let decodedPath = url.path(percentEncoded: false)
+        let path = decodedPath.isEmpty ? "/" : decodedPath
+        let matched: Bool
 
         switch kind {
+        case .sourceApplication:
+            // Unknown is not the same as a different app, including under NOT.
+            guard let sourceApp, !sourceApp.isEmpty else { return false }
+            matched = sourceApp.caseInsensitiveCompare(normalizedValue) == .orderedSame
         case .urlContains:
-            return urlString.contains(valueLower)
+            matched = urlString.contains(valueLower)
         case .hostEquals:
-            return host == valueLower
+            matched = host == valueLower
         case .hostSuffix:
-            return host.hasSuffix(valueLower.trimmingCharacters(in: CharacterSet(charactersIn: ".")))
+            matched = host.hasSuffix(valueLower.trimmingCharacters(in: CharacterSet(charactersIn: ".")))
                 || host == valueLower.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        case .pathEquals:
+            matched = path == normalizedValue
+        case .pathPrefix:
+            matched = path.hasPrefix(normalizedValue)
+        case .pathContains:
+            matched = path.contains(normalizedValue)
+        case .urlRegex:
+            // An invalid or interrupted expression must not become a match under NOT.
+            guard let result = regexMatches(url.absoluteString) else { return false }
+            matched = result
         }
+        return isNegated ? !matched : matched
+    }
+
+    private func regexMatches(_ string: String) -> Bool? {
+        guard let regex = try? NSRegularExpression(pattern: value) else { return nil }
+        let deadline = Date.timeIntervalSinceReferenceDate + 0.05
+        var matched = false
+        var interrupted = false
+        regex.enumerateMatches(in: string, options: .reportProgress, range: NSRange(string.startIndex..., in: string)) { result, flags, stop in
+            if flags.contains(.internalError) || Date.timeIntervalSinceReferenceDate > deadline {
+                interrupted = true
+                stop.pointee = true
+            } else if result != nil {
+                matched = true
+                stop.pointee = true
+            }
+        }
+        return interrupted ? nil : matched
+    }
+}
+
+enum RuleMatchMode: String, Codable, CaseIterable, Identifiable {
+    case any
+    case all
+
+    var id: String { rawValue }
+    var displayName: String { self == .any ? "Any (OR)" : "All (AND)" }
+    var conjunction: String { self == .any ? "OR" : "AND" }
+    var explanation: String {
+        self == .any
+            ? "The rule applies when any one of these conditions matches."
+            : "The rule applies only when all of these conditions match the same link."
     }
 }
 
@@ -287,7 +400,8 @@ struct RoutingRule: Codable, Identifiable, Hashable {
     var name: String
     var enabled: Bool
     var priority: Int
-    var matcher: RuleMatcher
+    var matchers: [RuleMatcher]
+    var matchMode: RuleMatchMode
     var target: RouteTarget
 
     init(
@@ -295,15 +409,55 @@ struct RoutingRule: Codable, Identifiable, Hashable {
         name: String,
         enabled: Bool = true,
         priority: Int,
-        matcher: RuleMatcher,
+        matchers: [RuleMatcher],
+        matchMode: RuleMatchMode = .any,
         target: RouteTarget
     ) {
         self.id = id
         self.name = name
         self.enabled = enabled
         self.priority = priority
-        self.matcher = matcher
+        self.matchers = matchers
+        self.matchMode = matchMode
         self.target = target
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, enabled, priority, matchers, matcher, matchMode, target
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        enabled = try container.decode(Bool.self, forKey: .enabled)
+        priority = try container.decode(Int.self, forKey: .priority)
+        target = try container.decode(RouteTarget.self, forKey: .target)
+        matchMode = try container.decodeIfPresent(RuleMatchMode.self, forKey: .matchMode) ?? .any
+        // Existing installations store one condition under "matcher".
+        matchers = try container.decodeIfPresent([RuleMatcher].self, forKey: .matchers)
+            ?? [container.decode(RuleMatcher.self, forKey: .matcher)]
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(enabled, forKey: .enabled)
+        try container.encode(priority, forKey: .priority)
+        try container.encode(matchers, forKey: .matchers)
+        try container.encode(matchMode, forKey: .matchMode)
+        try container.encode(target, forKey: .target)
+    }
+
+    func matches(url: URL, sourceApp: String?) -> Bool {
+        guard !matchers.isEmpty else { return false }
+        switch matchMode {
+        case .any:
+            return matchers.contains { $0.matches(url: url, sourceApp: sourceApp) }
+        case .all:
+            return matchers.allSatisfy { $0.matches(url: url, sourceApp: sourceApp) }
+        }
     }
 }
 

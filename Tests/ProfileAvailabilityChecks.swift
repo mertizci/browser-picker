@@ -25,8 +25,8 @@ struct ProfileAvailabilityChecks {
         let workTarget = RouteTarget(browser: work.browser, profileId: work.id)
         let personalTarget = RouteTarget(browser: personal.browser, profileId: personal.id)
         let matcher = RuleMatcher(kind: .hostEquals, value: "example.com")
-        let firstRule = RoutingRule(name: "Work first", priority: 0, matcher: matcher, target: workTarget)
-        let secondRule = RoutingRule(name: "Personal next", priority: 1, matcher: matcher, target: personalTarget)
+        let firstRule = RoutingRule(name: "Work first", priority: 0, matchers: [matcher], target: workTarget)
+        let secondRule = RoutingRule(name: "Personal next", priority: 1, matchers: [matcher], target: personalTarget)
         let icon = Data("saved icon".utf8)
         let original = AppSettings(
             fallbackMode: .silent, defaultTarget: workTarget, rules: [firstRule, secondRule],
@@ -76,7 +76,7 @@ struct ProfileAvailabilityChecks {
         assert(!destinations.contains { $0.space?.id == "space-work" })
         try store.setProfileEnabled(false, for: safari)
         assert(!store.isProfileEnabled(safariProfile))
-        let legacySafariRule = RoutingRule(name: "Legacy Safari", priority: 0, matcher: matcher,
+        let legacySafariRule = RoutingRule(name: "Legacy Safari", priority: 0, matchers: [matcher],
             target: RouteTarget(browser: safari.browser, profileId: safari.id))
         var legacySafariSettings = store.settings
         legacySafariSettings.rules = [legacySafariRule]
