@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Browser Picker — Send every link to the right browser profile on macOS</title>
-<meta name="description" content="A native macOS menu bar app that becomes your default browser and routes every link to the right browser and profile — automatically with rules, or with a quick picker." />
+<title>Browser Picker — Browser profiles, smart rules, or a simple picker for macOS</title>
+<meta name="description" content="Route macOS links by URL and source application with AND/OR/NOT rules, regex, and a rule tester. Customize profiles or use a simple browser picker without extra permissions." />
 
 <link rel="icon" type="image/png" sizes="128x128" href="assets/icon-128.png" />
 <link rel="apple-touch-icon" href="assets/icon-256.png" />
@@ -12,7 +12,7 @@
 
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Browser Picker — the right link, in the right browser profile" />
-<meta property="og:description" content="Native macOS menu bar app that routes every link to the right browser and profile — automatically with rules, or with a quick picker." />
+<meta property="og:description" content="Route links by URL and source application, test your rules, and customize browser profiles. Or choose Basic mode without extra permissions." />
 <meta property="og:url" content="https://mertizci.github.io/browser-picker/" />
 <meta property="og:image" content="https://mertizci.github.io/browser-picker/assets/og.jpg" />
 <meta property="og:image:width" content="1200" />
@@ -35,7 +35,7 @@
     <nav class="site-nav" aria-label="Primary">
       <a href="#features">Features</a>
       <a href="#screenshots">Screenshots</a>
-      <a href="#how">How it works</a>
+      <a href="#matching">Rule guide</a>
       <a href="#install">Install</a>
       <a href="#faq">FAQ</a>
       <a class="nav-cta" href="https://github.com/mertizci/browser-picker">GitHub</a>
@@ -60,9 +60,9 @@
         </h1>
 
         <p class="lede">
-          Browser Picker becomes your default browser and quietly sends every link to the exact
-          <strong>browser <em>and</em> profile</strong> it belongs to. Work links to your work profile,
-          personal links to your personal one — automatically.
+          Send work links to your work profile and personal links to your own browser.
+          Match the <strong>URL and the app it came from</strong>, or use a simple picker
+          to choose a browser every time.
         </p>
 
         <div class="cta-row">
@@ -85,6 +85,8 @@
           </div>
         </div>
 
+        <p class="hero-note">Just need a browser picker? <a href="#basic-mode">Basic mode works without extra permissions.</a></p>
+
         <ul class="meta-row">
           <li id="version-line">Latest release on GitHub</li>
           <li>macOS 14.0+</li>
@@ -96,10 +98,10 @@
       <div class="hero-art">
         <div class="glow" aria-hidden="true"></div>
         <img
-          class="shot-menubar"
-          src="assets/shots/menubar.png"
-          width="569" height="1000"
-          alt="The Browser Picker menu bar popover, listing installed browsers with their profiles and a shortcut to Settings."
+          class="shot-hero"
+          src="assets/shots/rule-tester.jpg"
+          width="900" height="712"
+          alt="Rule tester showing that a link from Mail would open in Chrome Work, above a list of routing rules."
         />
       </div>
     </div>
@@ -128,57 +130,49 @@
 
       <div class="feature-grid">
         <article class="card highlight">
-          <div class="card-icon">🎯</div>
-          <h3>Profile-level routing</h3>
-          <p>
-            Not just “open in Chrome” — <strong>“open in Chrome → Work”</strong> or
-            <strong>“Firefox → Client A”</strong>. Each link lands in the right account, already signed in.
-          </p>
+          <div class="card-icon" aria-hidden="true">🎯</div>
+          <h3>Your browser, profile, and space</h3>
+          <p>Open links in <strong>Chrome → Work</strong>, <strong>Firefox → Client A</strong>, or a specific Zen space. Supports Chrome, Edge, Brave, Vivaldi, Dia, Firefox, Zen, and Safari.</p>
         </article>
-
-        <article class="card">
-          <div class="card-icon">🔀</div>
-          <h3>Automatic rules</h3>
-          <p>
-            Match links by <em>URL contains</em>, <em>host equals</em>, or <em>host suffix</em>.
-            First match wins, and you can reorder rules by dragging.
-          </p>
+        <article class="card highlight">
+          <div class="card-icon" aria-hidden="true">📬</div>
+          <h3>Match the source application</h3>
+          <p>Send links from Mail, Slack, or another app to the right profile. Search installed applications by name, with native icons and keyboard selection.</p>
         </article>
-
-        <article class="card">
-          <div class="card-icon">🖱️</div>
-          <h3>Quick picker</h3>
-          <p>
-            No rule for this link? Choose the browser and profile on the fly, or let it fall through
-            silently to whatever you selected in the menu bar.
-          </p>
+        <article class="card highlight">
+          <div class="card-icon" aria-hidden="true">🔀</div>
+          <h3>Combine matching conditions</h3>
+          <p>Build one rule with <strong>Any (OR)</strong> or <strong>All (AND)</strong>, plus <strong>NOT</strong> for exceptions. Match hosts, URLs, paths, regex patterns, and source applications.</p>
         </article>
-
         <article class="card">
-          <div class="card-icon">👤</div>
-          <h3>Finds your profiles</h3>
-          <p>
-            Chrome, Edge, Brave and Vivaldi from their <code>Local State</code>; Firefox from
-            <code>profiles.ini</code> and Profile Groups; Safari from its profile database.
-          </p>
+          <div class="card-icon" aria-hidden="true">🧪</div>
+          <h3>Test before opening a link</h3>
+          <p>Enter a URL and an optional source application. The <strong>Rule tester</strong> shows the matching saved rule, browser, profile, and Zen space without launching a browser.</p>
         </article>
-
         <article class="card">
-          <div class="card-icon">🧭</div>
-          <h3>Lives in the menu bar</h3>
-          <p>
-            Switch your active browser and profile in one click. No dock icon, no window in your way —
-            just a small popover when you need it.
-          </p>
+          <div class="card-icon" aria-hidden="true">🖱️</div>
+          <h3>A simple browser picker</h3>
+          <p>Choose <strong>Basic mode</strong> for one entry per browser and a choice on every link. No Full Disk Access or Accessibility required. Your profile settings stay saved.</p>
         </article>
-
         <article class="card">
-          <div class="card-icon">🔒</div>
-          <h3>Native and trusted</h3>
-          <p>
-            Written in Swift and SwiftUI, universal for Apple Silicon and Intel, signed with a
-            Developer ID certificate and notarized by Apple. No Gatekeeper warnings.
-          </p>
+          <div class="card-icon" aria-hidden="true">🖼️</div>
+          <h3>Make profiles recognizable</h3>
+          <p>Give your work profile a company logo and your personal profile its own image. Custom icons appear in the picker, menu bar selection, settings, and rules.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">👤</div>
+          <h3>Keep only the profiles you use</h3>
+          <p>Disable unused profiles in Settings. They disappear from browser choices, and rules targeting them are skipped until you enable them again.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">⚡</div>
+          <h3>Manage rules in fewer clicks</h3>
+          <p>Duplicate a rule from its context menu, toggle it directly in the list, and drag to set priority. Resize the editor once; new and existing rules remember that size.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">🧭</div>
+          <h3>At home on macOS</h3>
+          <p>A native SwiftUI menu bar app for Apple Silicon and Intel. The Dock icon appears while app windows are open and disappears when the last one closes.</p>
         </article>
       </div>
     </div>
@@ -189,29 +183,112 @@
     <div class="container">
       <h2 class="center">A closer look</h2>
       <p class="center section-lede">
-        Three panes, no clutter. Set the fallback behaviour, write your rules, and check the profiles
-        Browser Picker found on your Mac.
+        Search applications, combine conditions, and check the destination before a link opens.
+        Screenshots use example rules and profiles. Select an image to view it at full size.
       </p>
 
       <div class="shots">
         <figure class="shot">
-          <img src="assets/shots/rules.png" width="1600" height="1208" loading="lazy"
-               alt="The Rules pane listing numbered routing rules, each showing its match pattern and destination browser profile." />
-          <figcaption><strong>Rules</strong> — route links by URL pattern, drag to reorder, first match wins.</figcaption>
+          <a href="assets/shots/rule-tester.jpg" target="_blank" rel="noopener" aria-label="View test the destination screenshot at full size (opens a new tab)">
+            <img src="assets/shots/rule-tester.jpg" width="900" height="712" loading="lazy" alt="Test the destination: Preview a saved rule with a URL and source app, including the browser and profile it would use." />
+          </a>
+          <figcaption><strong>Test the destination</strong> — Preview a saved rule with a URL and source app, including the browser and profile it would use.</figcaption>
         </figure>
-
         <figure class="shot">
-          <img src="assets/shots/settings.png" width="1600" height="1208" loading="lazy"
-               alt="The General pane showing default browser status and the fallback behaviour options." />
-          <figcaption><strong>General</strong> — choose what happens to links that match no rule.</figcaption>
+          <a href="assets/shots/source-application.jpg" target="_blank" rel="noopener" aria-label="View find the app a link comes from screenshot at full size (opens a new tab)">
+            <img src="assets/shots/source-application.jpg" width="900" height="712" loading="lazy" alt="Find the app a link comes from: Type an application name, then choose it from a list with native icons and bundle identifiers." />
+          </a>
+          <figcaption><strong>Find the app a link comes from</strong> — Type an application name, then choose it from a list with native icons and bundle identifiers.</figcaption>
         </figure>
-
         <figure class="shot">
-          <img src="assets/shots/browsers.png" width="1600" height="1208" loading="lazy"
-               alt="The Browsers pane listing detected browsers with the profiles found for each one." />
-          <figcaption><strong>Browsers</strong> — every profile discovered on your Mac, ready to target.</figcaption>
+          <a href="assets/shots/rule-conditions.jpg" target="_blank" rel="noopener" aria-label="View and, or, and exceptions screenshot at full size (opens a new tab)">
+            <img src="assets/shots/rule-conditions.jpg" width="740" height="712" loading="lazy" alt="AND, OR, and exceptions: Combine Mail with an exact domain, then exclude personal paths with NOT." />
+          </a>
+          <figcaption><strong>AND, OR, and exceptions</strong> — Combine Mail with an exact domain, then exclude personal paths with NOT.</figcaption>
+        </figure>
+        <figure class="shot">
+          <a href="assets/shots/rule-regex.jpg" target="_blank" rel="noopener" aria-label="View match with regex screenshot at full size (opens a new tab)">
+            <img src="assets/shots/rule-regex.jpg" width="740" height="712" loading="lazy" alt="Match with regex: Use an expression for work or admin paths. Matching help opens the bundled offline guide." />
+          </a>
+          <figcaption><strong>Match with regex</strong> — Use an expression for work or admin paths. Matching help opens the bundled offline guide.</figcaption>
+        </figure>
+        <figure class="shot">
+          <a href="assets/shots/profile-controls.jpg" target="_blank" rel="noopener" aria-label="View profiles you recognize screenshot at full size (opens a new tab)">
+            <img src="assets/shots/profile-controls.jpg" width="900" height="712" loading="lazy" alt="Profiles you recognize: Enable the profiles you use and choose a custom image for each one." />
+          </a>
+          <figcaption><strong>Profiles you recognize</strong> — Enable the profiles you use and choose a custom image for each one.</figcaption>
+        </figure>
+        <figure class="shot">
+          <a href="assets/shots/browser-modes.jpg" target="_blank" rel="noopener" aria-label="View choose your level of control screenshot at full size (opens a new tab)">
+            <img src="assets/shots/browser-modes.jpg" width="900" height="712" loading="lazy" alt="Choose your level of control: Switch between a Basic browser picker and profiles with automatic routing rules." />
+          </a>
+          <figcaption><strong>Choose your level of control</strong> — Switch between a Basic browser picker and profiles with automatic routing rules.</figcaption>
         </figure>
       </div>
+    </div>
+  </section>
+
+  <section class="section" id="matching">
+    <div class="container">
+      <h2 class="center">Rules that describe your day</h2>
+      <p class="center section-lede">Start with a domain. Add an app or a path when you need more control.</p>
+      <div class="recipe-grid">
+        <article class="card highlight">
+          <p class="recipe-label">Work links from Mail</p>
+          <h3>All (AND)</h3>
+          <ul class="condition-list">
+            <li>Source application <strong>Mail</strong></li>
+            <li>Host equals <code>example.com</code></li>
+            <li><strong>NOT</strong> Path starts with <code>/personal/</code></li>
+          </ul>
+          <p class="recipe-target">Open in <strong>Chrome · Work</strong></p>
+        </article>
+        <article class="card">
+          <p class="recipe-label">Two client websites, one rule</p>
+          <h3>Any (OR)</h3>
+          <ul class="condition-list">
+            <li>Host equals <code>client.example</code></li>
+            <li>Host equals <code>staging.client.example</code></li>
+          </ul>
+          <p class="recipe-target">Open in <strong>Firefox · Client A</strong></p>
+        </article>
+      </div>
+      <div class="matching-reference">
+        <h3>Eight ways to match</h3>
+        <div class="table-scroll" role="region" aria-label="Matching conditions" tabindex="0">
+          <table>
+            <thead><tr><th scope="col">Condition</th><th scope="col">What it checks</th><th scope="col">Example</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">URL contains</th><td>Text in the full URL; ignores case.</td><td><code>project=work</code></td></tr>
+              <tr><th scope="row">Host equals</th><td>The exact hostname; ignores case.</td><td><code>example.com</code></td></tr>
+              <tr><th scope="row">Host suffix</th><td>A literal hostname ending; ignores case.</td><td><code>example.com</code></td></tr>
+              <tr><th scope="row">Path equals</th><td>The full decoded path; case-sensitive.</td><td><code>/work/dashboard</code></td></tr>
+              <tr><th scope="row">Path starts with</th><td>A decoded path prefix; case-sensitive.</td><td><code>/work/</code></td></tr>
+              <tr><th scope="row">Path contains</th><td>Text in the decoded path; case-sensitive.</td><td><code>/reports/</code></td></tr>
+              <tr><th scope="row">URL regex</th><td>A pattern in the full URL; case-sensitive by default.</td><td><code>^https://example\.com/</code></td></tr>
+              <tr><th scope="row">Source application</th><td>The sending application.</td><td>Mail</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fineprint">Path conditions exclude query strings and fragments. Host suffix is literal: <code>example.com</code> also matches <code>notexample.com</code>. Use Host equals for an exact domain or a bounded regex for subdomains.</p>
+      </div>
+      <details class="regex-example">
+        <summary>Try a regex for work and admin pages</summary>
+        <p>Choose <strong>URL regex</strong> and paste this pattern without surrounding slash delimiters:</p>
+        <pre><code>^https://example\.com/(work|admin)(/|[?#]|$)</code></pre>
+        <p>Matches <code>https://example.com/work/project</code> and <code>https://example.com/admin</code>, while excluding <code>/workshop</code>. Prefix a regex with <code>(?i)</code> to ignore case. Invalid patterns are highlighted in the editor.</p>
+      </details>
+      <p class="guide-note">Rules run in priority order; the first enabled match with an available, enabled profile wins. Use the tester with a saved rule to check the result. <strong>Matching help</strong> in the app opens an offline guide, or <a href="https://github.com/mertizci/browser-picker#and-or-and-not">read the rule guide on GitHub</a>.</p>
+    </div>
+  </section>
+
+  <section class="section band" id="basic-mode">
+    <div class="container narrow">
+      <p class="eyebrow">Your choice</p>
+      <h2>Just want to pick a browser?</h2>
+      <p class="section-lede">Choose <strong>Continue Without Permissions</strong> during setup. Basic mode asks which browser to use for each link, with one entry per installed supported browser.</p>
+      <p class="section-lede">No Full Disk Access or Accessibility is required. Browser Picker uses normal macOS URL opening, and your browser chooses its current or default profile.</p>
+      <p class="section-lede">Switch modes anytime in <strong>Settings → General → Browser mode</strong>. Your profile settings and rules stay saved while profile selection, spaces, and automatic routing are paused.</p>
     </div>
   </section>
 
@@ -224,7 +301,7 @@
         <li>
           <span class="step-num">1</span>
           <h3>Install and launch</h3>
-          <p>The icon appears in your menu bar. A short onboarding asks for the permissions it needs to reach Safari profiles.</p>
+          <p>The icon appears in your menu bar. Choose Basic mode without extra permissions, or set up permissions for profiles and routing rules.</p>
         </li>
         <li>
           <span class="step-num">2</span>
@@ -233,8 +310,8 @@
         </li>
         <li>
           <span class="step-num">3</span>
-          <h3>Add your rules</h3>
-          <p>Open Settings → Rules and describe where links should go, for example <em>host suffix <code>github.com</code> → Chrome · Work</em>.</p>
+          <h3>Route or choose</h3>
+          <p>In profile mode, open Settings → Rules, choose your conditions and destination, then check them with Rule tester. In Basic mode, simply open a link and pick a browser.</p>
         </li>
       </ol>
     </div>
@@ -289,22 +366,42 @@
 
       <details>
         <summary>Which browsers are supported?</summary>
-        <p>Safari, Google Chrome, Microsoft Edge, Brave, Vivaldi and Firefox — including their individual profiles.</p>
+        <p>Safari, Google Chrome, Microsoft Edge, Brave, Vivaldi, Dia, Firefox, and Zen — including their profiles. Zen also supports routing to named spaces. Basic mode shows one entry per installed supported browser.</p>
       </details>
 
       <details>
         <summary>Why does it ask for Accessibility and Full Disk Access?</summary>
-        <p>Only for Safari. Safari has no public way to open a link in a specific profile, so Browser Picker drives Safari's own <em>File</em> menu to do it, and reads Safari's profile names from a protected file. Other browsers need no permissions at all.</p>
+        <p>Accessibility is used to control Safari and Dia profile menus and switch Zen spaces. Full Disk Access is used to read Safari profile names from its protected database. You can skip these permissions entirely by choosing <a href="#basic-mode">Basic browser picker</a> mode. After granting Accessibility, quit and reopen the app.</p>
       </details>
 
       <details>
         <summary>Does it track me or send my links anywhere?</summary>
-        <p>No. Everything happens on your Mac. There is no analytics, no account, and no network traffic other than an optional check for new releases on GitHub. Your settings live in a plain JSON file in your Library folder.</p>
+        <p>Link matching and rule testing happen locally on your Mac. There is no account or analytics, and URLs are not sent to a routing service. Update checks and installer downloads contact GitHub. Your rules, profile preferences, and custom icons are stored locally.</p>
+      </details>
+
+      <details>
+        <summary>What if the source application is unknown?</summary>
+        <p>Browser Picker uses the sender reported by macOS when a link opens. Some links identify a helper app or provide no source. An unknown sender does not match a Source application condition, even with NOT. URL-only rules and fallback still apply.</p>
+      </details>
+
+      <details>
+        <summary>Can I hide unused profiles or change their icons?</summary>
+        <p>Yes. In <strong>Settings → Browsers</strong>, turn off Enabled to hide a profile and skip rules targeting it. Choose Icon lets you select your own image or company logo. Both choices survive refreshes and restarts.</p>
+      </details>
+
+      <details>
+        <summary>Will updates ask for permissions again?</summary>
+        <p>Official releases preserve the signing identity used by v1.0.20, and new releases validate that identity before distribution. Normal release updates should retain permissions. A grant tied to an older locally re-signed or test build may need a one-time repair: quit the app, remove its old permission entry, add the installed official app again, and reopen it. Debug builds now use a separate identity.</p>
+      </details>
+
+      <details>
+        <summary>Why does an icon sometimes appear in the Dock?</summary>
+        <p>The Dock icon appears while an application window is open, including a minimized window. Closing the last window removes it while Browser Picker continues running in the menu bar. Opening the menu bar popover alone does not add a Dock icon.</p>
       </details>
 
       <details>
         <summary>Is it really free?</summary>
-        <p>Yes, and the source is on GitHub. If it saves you time, you're welcome to buy me a coffee — but nothing is locked behind it.</p>
+        <p>Yes. Browser Picker is open source under the <a href="https://github.com/mertizci/browser-picker/blob/main/LICENSE.md">MIT License</a>. All features are free; donations are optional.</p>
       </details>
     </div>
   </section>
@@ -314,7 +411,7 @@
     <div class="container narrow center">
       <img src="assets/icon-256.png" alt="" width="88" height="88" class="final-icon" />
       <h2>Stop opening links twice.</h2>
-      <p class="section-lede">Install it once, add a couple of rules, and forget it's there.</p>
+      <p class="section-lede">Set up your routing rules, or start with a simple browser picker.</p>
       <div class="cta-row center-row">
         <a class="btn btn-primary" href="https://github.com/mertizci/browser-picker/releases/latest">Download for macOS</a>
         <a class="btn btn-ghost" href="https://github.com/mertizci/browser-picker">View source on GitHub</a>
@@ -334,6 +431,8 @@
     <nav class="footer-links" aria-label="Footer">
       <a href="https://github.com/mertizci/browser-picker">GitHub</a>
       <a href="https://github.com/mertizci/browser-picker/releases">Releases</a>
+      <a href="https://github.com/mertizci/browser-picker#readme">Documentation</a>
+      <a href="https://github.com/mertizci/browser-picker/blob/main/LICENSE.md">MIT License</a>
       <a href="https://github.com/mertizci/browser-picker/issues">Report an issue</a>
       <a href="https://www.paypal.com/donate/?hosted_button_id=8BKTHWAHUPWPG">Donate</a>
     </nav>
