@@ -10,6 +10,7 @@ struct RulesListView: View {
     }
 
     var body: some View {
+        let conflicts = RuleConflictAnalyzer().conflicts(in: settingsStore.settings)
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsPageHeader(
@@ -47,6 +48,7 @@ struct RulesListView: View {
                         RuleCardView(
                             rule: rule,
                             priority: index + 1,
+                            conflict: conflicts[rule.id],
                             settingsStore: settingsStore,
                             onEdit: { RuleEditorWindowController.shared.show(rule: rule, settingsStore: settingsStore) },
                             onDelete: { ruleToDelete = rule },
@@ -121,6 +123,7 @@ struct RulesListView: View {
 private struct RuleCardView: View {
     let rule: RoutingRule
     let priority: Int
+    let conflict: RuleConflict?
     @ObservedObject var settingsStore: SettingsStore
     let onEdit: () -> Void
     let onDelete: () -> Void
@@ -173,6 +176,15 @@ private struct RuleCardView: View {
                         .help(rule.matchers.map(\.summary).joined(separator: "\n\(rule.matchMode.conjunction) "))
 
                         destinationRow
+
+                        if let conflict {
+                            RuleConflictNotice(
+                                conflict: conflict,
+                                earlierDestination: settingsStore.profile(for: conflict.earlierRule.target)?.routeLabel(spaceId: conflict.earlierRule.target.spaceId)
+                                    ?? "\(conflict.earlierRule.target.browser.displayName) · \(conflict.earlierRule.target.profileId)",
+                                compact: true
+                            )
+                        }
                     }
 
                     Spacer(minLength: 8)

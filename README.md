@@ -40,6 +40,7 @@ This README describes the current source. Features shown here may not yet be ava
 - **Eight condition types** — URL contains, host equals, host suffix, path equals, path starts with, path contains, URL regex, and source application.
 - **Rule tester** — preview the matching saved rule and destination without opening the URL.
 - **Quick rule management** — duplicate from the context menu, toggle rules directly in the list, and drag to change priority.
+- **Rule conflict warnings** — see identical conditions and rules fully covered by an earlier rule, including conflicting destinations, in the list and while editing.
 - **Profile controls** — hide unused profiles and give each profile its own image or company logo.
 - **Basic browser picker** — use the app without Full Disk Access or Accessibility, with one entry per browser.
 - **Offline matching guide** — open **Matching help** from the rule editor or tester for examples and explanations.
@@ -113,6 +114,14 @@ Rules run in list order. The first enabled rule whose conditions match and whose
 Right-click a rule and choose **Duplicate** to insert an independent copy below it. The copy preserves the conditions, match mode, destination, and enabled state. Use the switch in each rule row to disable or re-enable it without editing or deleting it.
 
 The editor opens in a movable, resizable window. Add Rule and Edit Rule share the last saved window size; it is fitted to the current screen when needed. Scroll to reach additional fields while the action buttons remain visible.
+
+### Conflicting rules
+
+Warnings appear in the rule list and editor when an earlier enabled rule has the same conditions or fully covers a later rule. They name the earlier rule and distinguish duplicate conditions with the same destination from identical conditions pointing to a different browser, profile, or space. The editor also shows the earlier destination and updates as you change the draft or reorder saved rules.
+
+For example, **Host equals `example.com` → Chrome · Work** above **Host equals `example.com` AND Path starts with `/personal/` → Chrome · Personal** prevents the personal rule from being reached. Move the more specific rule above the general one, narrow the earlier rule, or disable one of them. Warnings are advisory; saving is still allowed.
+
+Checks ignore disabled rules, disabled destination profiles, and Basic mode. They detect identical conditions regardless of order and common full-coverage relationships for URL text, hosts, paths, AND/OR, and NOT. They do not attempt to prove partial overlaps, coverage by several earlier rules together, or equivalence between different regex patterns. Identical regex text is reported as duplicate conditions; regexes are not executed by the conflict checker. No warning is not a guarantee that two rules cannot overlap—use Rule tester for specific links. A missing profile still participates because live routing selects that rule before reporting the unavailable destination.
 
 ### AND, OR, and NOT
 

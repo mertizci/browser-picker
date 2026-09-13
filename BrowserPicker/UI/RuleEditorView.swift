@@ -11,6 +11,7 @@ struct RuleEditorView: View {
     @State private var selectedProfileId: String
     @State private var selectedSpaceId: String?
     @State private var showDeleteConfirmation = false
+    @State private var draftID: UUID
 
     private let existingID: UUID?
     private let existingPriority: Int?
@@ -21,6 +22,7 @@ struct RuleEditorView: View {
         self.onClose = onClose
         existingID = rule?.id
         existingPriority = rule?.priority
+        _draftID = State(initialValue: rule?.id ?? UUID())
         _name = State(initialValue: rule?.name ?? "")
         _enabled = State(initialValue: rule?.enabled ?? true)
         _matchMode = State(initialValue: rule?.matchMode ?? .any)
@@ -62,6 +64,16 @@ struct RuleEditorView: View {
                 ScrollView(.vertical) {
                     VStack(alignment: .leading, spacing: 16) {
                         rulePreview
+
+                        if let conflict = draftConflict {
+                            RuleConflictNotice(
+                                conflict: conflict,
+                                earlierDestination: settingsStore.profile(for: conflict.earlierRule.target)?.routeLabel(spaceId: conflict.earlierRule.target.spaceId)
+                                    ?? "\(conflict.earlierRule.target.browser.displayName) · \(conflict.earlierRule.target.profileId)"
+                            )
+                            .padding(14)
+                            .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                        }
 
                         editorSection(title: "Name", subtitle: "A clear label for this rule.", icon: "tag") {
                             TextField("e.g. Work links → Firefox", text: $name)
@@ -313,6 +325,16 @@ struct RuleEditorView: View {
             && selectedProfile.map { settingsStore.isProfileEnabled($0) } == true
     }
 
+    private var draftConflict: RuleConflict? {
+        // Incomplete conditions are not diagnosed while the user is typing.
+        guard !selectedProfileId.isEmpty else { return nil }
+        let draft = RoutingRule(id: draftID, name: name, enabled: enabled,
+                                priority: existingPriority ?? 0,
+                                matchers: conditions.map(\.matcher), matchMode: matchMode,
+                                target: selectedTarget)
+        return RuleConflictAnalyzer().conflict(for: draft, in: settingsStore.settings)
+    }
+
     private func resolveProfileSelection(for browser: BrowserKind? = nil) {
         let available = settingsStore.profiles(for: browser ?? selectedBrowser)
         defer { discardSpaceUnlessAvailable(in: available) }
@@ -344,7 +366,7 @@ struct RuleEditorView: View {
     private func save() {
         guard canSave else { return }
         let rule = RoutingRule(
-            id: existingID ?? UUID(),
+            id: draftID,
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             enabled: enabled,
             priority: existingPriority ?? 0,

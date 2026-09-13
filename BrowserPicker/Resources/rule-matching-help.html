@@ -26,7 +26,7 @@
   <p class="muted">Choose which links a rule opens, with examples you can copy. This guide is available offline.</p>
 </header>
 <nav aria-label="Guide sections">
-  <a href="#quick-start">Quick start</a><a href="#tester">Rule tester</a><a href="#types">Condition types</a><a href="#logic">AND, OR &amp; NOT</a><a href="#recipes">Examples</a><a href="#regex">Regex</a><a href="#troubleshooting">Troubleshooting</a>
+  <a href="#quick-start">Quick start</a><a href="#tester">Rule tester</a><a href="#conflicts">Rule conflicts</a><a href="#types">Condition types</a><a href="#logic">AND, OR &amp; NOT</a><a href="#recipes">Examples</a><a href="#regex">Regex</a><a href="#troubleshooting">Troubleshooting</a>
 </nav>
 <main>
 <section id="quick-start">
@@ -50,6 +50,13 @@
   </ol>
   <p>Disabled rules and rules targeting disabled profiles are skipped, just as when opening a real link. If no rule matches, the result explains whether your menu bar selection would be used or the browser picker would open. If a matched rule’s profile is missing, update its destination; routing would fail instead of falling back.</p>
   <p>The tester never opens the link or changes your settings. It previews the routing decision; it does not check browser launch permissions. A missing saved space uses the current space. Changing the URL, settings or detected profiles clears the result: click <strong>Test Rule</strong> again to refresh it.</p>
+</section>
+<section id="conflicts">
+  <h2>Find conflicting rules</h2>
+  <p>The rule list and editor warn when an earlier enabled rule has identical conditions or fully covers a later rule. The warning names that rule. Identical conditions with different destinations are labeled <strong>Same conditions, different destination</strong>; identical conditions with the same destination are labeled <strong>Duplicate conditions</strong>.</p>
+  <p>For example, <strong>Host equals <code>example.com</code></strong> above <strong>Host equals <code>example.com</code> AND Path starts with <code>/personal/</code></strong> will handle every link the second rule matches. Put the more specific rule first, narrow the earlier rule, or disable one of them. You can still save a rule with a warning.</p>
+  <p>Warnings update when conditions, destinations, priorities, or enabled states change. Disabled rules and disabled destination profiles are ignored; Basic mode pauses the checks. Missing profiles still participate because routing selects their rule before reporting a missing destination.</p>
+  <p>Checks detect identical conditions and simple full-coverage relationships for URL text, hosts, paths, AND/OR, and NOT. They do not analyze partial overlaps, several earlier rules covering a rule together, or relationships between different regex patterns. Identical regex text is flagged as duplicate conditions, without running it. <strong>No warning does not guarantee there is no overlap.</strong> Use Rule tester to check specific URLs and source applications.</p>
 </section>
 <section id="types">
   <h2>Condition types</h2>
