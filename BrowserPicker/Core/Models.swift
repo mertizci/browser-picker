@@ -313,21 +313,25 @@ struct AppSettings: Codable {
     var rules: [RoutingRule]
     /// Imported PNGs, keyed by browser and stable profile ID, independent of discovery.
     var profileIcons: [String: [String: Data]]
+    /// Disabled IDs remain saved even when a browser is temporarily unavailable.
+    var disabledProfileIDs: [String: Set<String>]
 
     init(
         fallbackMode: FallbackMode,
         defaultTarget: RouteTarget,
         rules: [RoutingRule],
-        profileIcons: [String: [String: Data]] = [:]
+        profileIcons: [String: [String: Data]] = [:],
+        disabledProfileIDs: [String: Set<String>] = [:]
     ) {
         self.fallbackMode = fallbackMode
         self.defaultTarget = defaultTarget
         self.rules = rules
         self.profileIcons = profileIcons
+        self.disabledProfileIDs = disabledProfileIDs
     }
 
     private enum CodingKeys: String, CodingKey {
-        case fallbackMode, defaultTarget, rules, profileIcons
+        case fallbackMode, defaultTarget, rules, profileIcons, disabledProfileIDs
     }
 
     init(from decoder: Decoder) throws {
@@ -336,6 +340,12 @@ struct AppSettings: Codable {
         defaultTarget = try container.decode(RouteTarget.self, forKey: .defaultTarget)
         rules = try container.decode([RoutingRule].self, forKey: .rules)
         profileIcons = try container.decodeIfPresent([String: [String: Data]].self, forKey: .profileIcons) ?? [:]
+        disabledProfileIDs = try container.decodeIfPresent([String: Set<String>].self, forKey: .disabledProfileIDs) ?? [:]
+    }
+
+    func isProfileEnabled(browser: BrowserKind, profileID: String) -> Bool {
+        let id = browser == .safari && profileID == "safari-default" ? SafariProfileRecord.defaultID : profileID
+        return disabledProfileIDs[browser.rawValue]?.contains(id) != true
     }
 
     static var `default`: AppSettings {
@@ -355,6 +365,7 @@ struct RoutingContext {
 enum BrowserPickerError: LocalizedError {
     case browserNotInstalled(BrowserKind)
     case profileNotFound
+    case profileDisabled
     case launchFailed(String)
 
     var errorDescription: String? {
@@ -363,6 +374,8 @@ enum BrowserPickerError: LocalizedError {
             return "\(browser.displayName) is not installed."
         case .profileNotFound:
             return "The selected browser profile could not be found."
+        case .profileDisabled:
+            return "This browser profile is disabled. Enable it in Settings → Browsers to open links in it."
         case .launchFailed(let message):
             return "Failed to open link: \(message)"
         }

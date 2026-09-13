@@ -4,6 +4,7 @@ struct RuleEngine {
     func matchingRule(for context: RoutingContext, in settings: AppSettings) -> RoutingRule? {
         settings.rules
             .filter(\.enabled)
+            .filter { settings.isProfileEnabled(browser: $0.target.browser, profileID: $0.target.profileId) }
             .sorted { $0.priority < $1.priority }
             .first { $0.matcher.matches(url: context.url, sourceApp: context.sourceApp) }
     }

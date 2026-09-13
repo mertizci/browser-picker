@@ -123,7 +123,7 @@ struct RulesListView: View {
 private struct RuleCardView: View {
     let rule: RoutingRule
     let priority: Int
-    let settingsStore: SettingsStore
+    @ObservedObject var settingsStore: SettingsStore
     let onEdit: () -> Void
     let onDelete: () -> Void
     @State private var isHovered = false
@@ -145,8 +145,8 @@ private struct RuleCardView: View {
                         HStack(spacing: 8) {
                             Text(rule.name)
                                 .font(.body.weight(.semibold))
-                            if !rule.enabled {
-                                Text("Disabled")
+                            if !rule.enabled || !settingsStore.settings.isProfileEnabled(browser: rule.target.browser, profileID: rule.target.profileId) {
+                                Text(rule.enabled ? "Profile disabled" : "Disabled")
                                     .font(.caption2.weight(.medium))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)

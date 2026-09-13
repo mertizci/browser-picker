@@ -182,7 +182,7 @@ private struct GeneralSettingsTab: View {
                 title: "Menu bar selection",
                 subtitle: "This browser and profile are used when no rule matches and fallback is silent."
             ) {
-                if let profile = settingsStore.profile(for: settingsStore.settings.defaultTarget) {
+                if let profile = settingsStore.enabledDefaultProfile {
                     ProfileSummaryRow(
                         profile: profile,
                         spaceId: settingsStore.settings.defaultTarget.spaceId
@@ -192,7 +192,7 @@ private struct GeneralSettingsTab: View {
                     HStack(spacing: 10) {
                         Image(systemName: "questionmark.circle")
                             .foregroundStyle(.secondary)
-                        Text("No profile selected")
+                        Text("Enable a profile in Browsers to select a default.")
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -222,7 +222,7 @@ private struct BrowsersSettingsTab: View {
     var body: some View {
         SettingsDetailScaffold(
             title: "Browsers",
-            subtitle: "Profiles discovered from installed browsers on this Mac.",
+            subtitle: "Choose which browser profiles can open links.",
             icon: "globe",
             action: {
                 settingsStore.reloadProfiles()
@@ -231,6 +231,10 @@ private struct BrowsersSettingsTab: View {
             actionTitle: "Refresh",
             actionIcon: "arrow.clockwise"
         ) {
+            Text("Disabled profiles are hidden from the picker and menu bar. Rules targeting them are skipped until you re-enable the profile.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
             if settingsStore.profiles.isEmpty {
                 ContentUnavailableView {
                     Label("No Browsers Found", systemImage: "globe")
@@ -366,7 +370,7 @@ private struct BrowsersSettingsTab: View {
 
 private struct BrowserProfilesCard: View {
     @EnvironmentObject private var settingsStore: SettingsStore
-    @State private var iconError: String?
+    @State private var profileError: String?
     let browser: BrowserKind
     let profiles: [BrowserProfile]
 
@@ -384,14 +388,29 @@ private struct BrowserProfilesCard: View {
     var body: some View {
         SettingsCard(
             title: browser.displayName,
-            subtitle: "\(profiles.count) profile\(profiles.count == 1 ? "" : "s") detected. Choose custom icons to tell them apart."
+            subtitle: "\(profiles.count) profile\(profiles.count == 1 ? "" : "s") detected · \(profiles.filter { settingsStore.isProfileEnabled($0) }.count) enabled"
         ) {
             VStack(spacing: 0) {
                 ForEach(Array(profiles.enumerated()), id: \.element.id) { index, profile in
                     HStack(spacing: 12) {
                         ProfileSummaryRow(profile: profile, detail: spacesDetail(for: profile))
+                            .opacity(settingsStore.isProfileEnabled(profile) ? 1 : 0.5)
 
                         VStack(alignment: .trailing, spacing: 6) {
+                            Toggle("Enabled", isOn: Binding(
+                                get: { settingsStore.isProfileEnabled(profile) },
+                                set: { enabled in
+                                    do {
+                                        try settingsStore.setProfileEnabled(enabled, for: profile)
+                                    } catch {
+                                        profileError = error.localizedDescription
+                                    }
+                                }
+                            ))
+                            .toggleStyle(.switch)
+                            .font(.caption)
+                            .accessibilityLabel("Enable \(browser.displayName) \(profile.displayName)")
+
                             Button(settingsStore.customIconData(for: profile) == nil ? "Choose Icon…" : "Change Icon…") {
                                 chooseIcon(for: profile)
                             }
@@ -402,7 +421,7 @@ private struct BrowserProfilesCard: View {
                                     do {
                                         try settingsStore.setCustomIcon(nil, for: profile)
                                     } catch {
-                                        iconError = error.localizedDescription
+                                        profileError = error.localizedDescription
                                     }
                                 }
                                 .accessibilityLabel("Restore browser icon for \(browser.displayName) \(profile.displayName)")
@@ -421,13 +440,13 @@ private struct BrowserProfilesCard: View {
                 }
             }
         }
-        .alert("Couldn’t Update Profile Icon", isPresented: Binding(
-            get: { iconError != nil },
-            set: { if !$0 { iconError = nil } }
+        .alert("Couldn’t Update Profile", isPresented: Binding(
+            get: { profileError != nil },
+            set: { if !$0 { profileError = nil } }
         )) {
-            Button("OK", role: .cancel) { iconError = nil }
+            Button("OK", role: .cancel) { profileError = nil }
         } message: {
-            Text(iconError ?? "")
+            Text(profileError ?? "")
         }
     }
 
@@ -445,7 +464,7 @@ private struct BrowserProfilesCard: View {
             let data = try ProfileIconImporter.pngData(from: url)
             try settingsStore.setCustomIcon(data, for: profile)
         } catch {
-            iconError = error.localizedDescription
+            profileError = error.localizedDescription
         }
     }
 }

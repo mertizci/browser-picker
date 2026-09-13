@@ -8,7 +8,7 @@ struct MenuBarContentView: View {
     @Environment(\.dismiss) private var dismiss
 
     private var activeProfile: BrowserProfile? {
-        settingsStore.profile(for: settingsStore.settings.defaultTarget)
+        settingsStore.enabledDefaultProfile
     }
 
     private var activeSpace: BrowserSpace? {
@@ -116,8 +116,14 @@ struct MenuBarContentView: View {
 
     @ViewBuilder
     private var profileMenus: some View {
+        if settingsStore.enabledProfiles.isEmpty {
+            Text("No enabled profiles. Enable a profile in Settings → Browsers.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(8)
+        }
         ForEach(BrowserKind.allCases) { browser in
-            let profiles = settingsStore.profiles(for: browser)
+            let profiles = settingsStore.enabledProfiles(for: browser)
             if !profiles.isEmpty {
                 let groups = RouteDestinationGroup.all(in: profiles)
                 Menu {

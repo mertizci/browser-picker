@@ -89,9 +89,15 @@ struct RuleEditorView: View {
                             resolveProfileSelection(for: newValue)
                         }
 
-                        let profiles = settingsStore.profiles(for: selectedBrowser)
+                        if let profile = selectedProfile, !settingsStore.isProfileEnabled(profile) {
+                            Label("This rule’s profile is disabled. Choose an enabled profile or re-enable it in Browsers.", systemImage: "exclamationmark.triangle")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+
+                        let profiles = settingsStore.enabledProfiles(for: selectedBrowser)
                         if profiles.isEmpty {
-                            Label("No profiles found for this browser.", systemImage: "exclamationmark.triangle")
+                            Label("No enabled profiles for this browser. Enable one in Settings → Browsers.", systemImage: "exclamationmark.triangle")
                                 .font(.caption)
                                 .foregroundStyle(.orange)
                                 .padding(.vertical, 4)
@@ -270,7 +276,7 @@ struct RuleEditorView: View {
     private var canSave: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
             && !matcherValue.trimmingCharacters(in: .whitespaces).isEmpty
-            && !selectedProfileId.isEmpty
+            && selectedProfile.map { settingsStore.isProfileEnabled($0) } == true
     }
 
     private func resolveProfileSelection(for browser: BrowserKind? = nil) {
@@ -290,7 +296,7 @@ struct RuleEditorView: View {
             return
         }
 
-        selectedProfileId = available.first?.id ?? ""
+        selectedProfileId = available.first(where: { settingsStore.isProfileEnabled($0) })?.id ?? ""
     }
 
     /// A space belongs to one profile, so it cannot survive a change of profile.

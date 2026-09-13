@@ -65,7 +65,7 @@ struct PickerPromptView: View {
     /// exceed `maxVisibleRows` — so a couple of profiles don't leave dead space.
     @ViewBuilder
     private func profileList(for url: URL) -> some View {
-        let groups = RouteDestinationGroup.all(in: settingsStore.profiles)
+        let groups = RouteDestinationGroup.all(in: settingsStore.enabledProfiles)
         let rows = VStack(alignment: .leading, spacing: 12) {
             ForEach(groups) { group in
                 VStack(alignment: .leading, spacing: 8) {
@@ -81,7 +81,18 @@ struct PickerPromptView: View {
             }
         }
 
-        if rowCount(of: groups) > maxVisibleRows {
+        if groups.isEmpty {
+            ContentUnavailableView {
+                Label("No Enabled Profiles", systemImage: "globe")
+            } description: {
+                Text("Enable a profile in Settings → Browsers to open this link.")
+            } actions: {
+                Button("Open Settings") {
+                    SettingsWindowController.shared.show(settingsStore: settingsStore, appState: .shared)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        } else if rowCount(of: groups) > maxVisibleRows {
             ScrollView { rows }
                 .frame(height: estimatedRowHeight * CGFloat(maxVisibleRows))
         } else {

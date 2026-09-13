@@ -39,8 +39,8 @@ final class URLRouter: ObservableObject {
         let context = RoutingContext(url: url, sourceApp: sourceApp)
         let settings = settingsStore.settings
 
-        if settings.fallbackMode == .picker,
-           ruleEngine.matchingRule(for: context, in: settings) == nil {
+        if ruleEngine.matchingRule(for: context, in: settings) == nil,
+           settings.fallbackMode == .picker || settingsStore.enabledDefaultProfile == nil {
             pendingPickerURL = url
             pendingPickerContext = context
             PickerWindowController.shared.show(settingsStore: settingsStore, urlRouter: self)
@@ -52,6 +52,7 @@ final class URLRouter: ObservableObject {
     }
 
     func completePickerSelection(url: URL, target: RouteTarget) {
+        guard let profile = settingsStore.profile(for: target), settingsStore.isProfileEnabled(profile) else { return }
         pendingPickerURL = nil
         pendingPickerContext = nil
         PickerWindowController.shared.close()
@@ -70,6 +71,11 @@ final class URLRouter: ObservableObject {
 
         guard let profile = settingsStore.profile(for: target) else {
             showError(BrowserPickerError.profileNotFound)
+            return
+        }
+
+        guard settingsStore.isProfileEnabled(profile) else {
+            showError(BrowserPickerError.profileDisabled)
             return
         }
 

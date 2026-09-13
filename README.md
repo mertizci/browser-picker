@@ -56,6 +56,8 @@ Juggling a personal Chrome, a work Chrome profile, and Firefox for clients? Stop
 
 To give a profile its own icon, open **Settings → Browsers → Choose Icon…** and select an image or company logo (PNG, JPEG, HEIC, TIFF, GIF, or BMP). The icon appears in the link picker, settings, routing rules, and active menu bar selection. Browser Picker saves a copy, so it survives profile refreshes, restarts, and moving the original image. Select **Use Browser Icon** to reset it.
 
+Turn off **Enabled** beside a profile in **Settings → Browsers** to hide it from the link picker, menu bar choices, and rule destination choices. Rules targeting that profile are skipped; the next matching rule or your fallback handles the link. The rules and custom icon stay saved, and re-enabling the profile restores them. Disabling the active profile selects another enabled profile. If none remain, links show a prompt to enable one. These preferences survive refreshes and restarts; newly discovered profiles are enabled by default.
+
 ## Install
 
 > A **universal build** that runs natively on both Apple Silicon and Intel Macs (macOS 14.0+). Every release is signed with a Developer ID certificate and **notarized by Apple**, so it opens without Gatekeeper warnings.
@@ -124,6 +126,8 @@ open ~/Library/Developer/Xcode/DerivedData/BrowserPicker-*/Build/Products/Debug/
 ```
 
 Or open `BrowserPicker.xcodeproj` in Xcode and press ⌘R.
+
+After generating the project, run `scripts/test-profile-availability.sh` for profile filtering, routing, and persistence checks. The runner uses Xcode's Debug dylib and temporary settings; it does not launch browsers or change your saved configuration.
 
 > Signing is configured in `project.yml` (`CODE_SIGN_IDENTITY`). Ad-hoc signatures change on every build and break the Accessibility grant, so a real "Apple Development" identity is recommended.
 

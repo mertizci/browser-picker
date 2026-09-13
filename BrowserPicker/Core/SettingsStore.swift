@@ -13,8 +13,10 @@ final class SettingsStore: ObservableObject {
     private let decoder: JSONDecoder
 
     private let configURL: URL
+    private let discoverProfiles: () -> [BrowserProfile]
 
-    init(configURL: URL? = nil) {
+    init(configURL: URL? = nil, discoverProfiles: @escaping () -> [BrowserProfile] = ProfileDiscoveryService.discoverAll) {
+        self.discoverProfiles = discoverProfiles
         encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         decoder = JSONDecoder()
@@ -27,7 +29,7 @@ final class SettingsStore: ObservableObject {
     }
 
     func reloadProfiles() {
-        profiles = ProfileDiscoveryService.discoverAll()
+        profiles = discoverProfiles()
         migrateLegacySafariTargets()
         ensureDefaultTargetIsValid()
         PermissionMonitor.shared.refresh()
@@ -92,6 +94,40 @@ final class SettingsStore: ObservableObject {
         settings.profileIcons[profile.browser.rawValue]?[profile.id]
     }
 
+    var enabledProfiles: [BrowserProfile] {
+        profiles.filter { isProfileEnabled($0) }
+    }
+
+    var enabledDefaultProfile: BrowserProfile? {
+        guard let profile = profile(for: settings.defaultTarget), isProfileEnabled(profile) else { return nil }
+        return profile
+    }
+
+    func enabledProfiles(for browser: BrowserKind) -> [BrowserProfile] {
+        enabledProfiles.filter { $0.browser == browser }
+    }
+
+    func isProfileEnabled(_ profile: BrowserProfile) -> Bool {
+        settings.isProfileEnabled(browser: profile.browser, profileID: profile.id)
+    }
+
+    func setProfileEnabled(_ enabled: Bool, for profile: BrowserProfile) throws {
+        var updated = settings
+        let browser = profile.browser.rawValue
+        let profileID = profile.browser == .safari && profile.id == "safari-default" ? SafariProfileRecord.defaultID : profile.id
+        if enabled {
+            updated.disabledProfileIDs[browser]?.remove(profileID)
+            if updated.disabledProfileIDs[browser]?.isEmpty == true {
+                updated.disabledProfileIDs.removeValue(forKey: browser)
+            }
+        } else {
+            updated.disabledProfileIDs[browser, default: []].insert(profileID)
+        }
+        updateDefaultTarget(in: &updated)
+        try persist(updated)
+        settings = updated
+    }
+
     /// Passing nil restores the browser icon. Publish only after saving succeeds.
     func setCustomIcon(_ data: Data?, for profile: BrowserProfile) throws {
         var updated = settings
@@ -110,6 +146,7 @@ final class SettingsStore: ObservableObject {
     }
 
     func setDefaultTarget(_ target: RouteTarget) {
+        guard let profile = profile(for: target), isProfileEnabled(profile) else { return }
         updateSettings { $0.defaultTarget = target }
     }
 
@@ -192,20 +229,22 @@ final class SettingsStore: ObservableObject {
     }
 
     private func ensureDefaultTargetIsValid() {
-        if profile(for: settings.defaultTarget) != nil { return }
+        var updated = settings
+        updateDefaultTarget(in: &updated)
+        guard updated.defaultTarget != settings.defaultTarget else { return }
+        settings = updated
+        save()
+    }
 
-        if settings.defaultTarget.browser == .safari,
-           settings.defaultTarget.profileId == "safari-default",
-           let safariDefault = profiles.first(where: { $0.browser == .safari && $0.id == SafariProfileRecord.defaultID }) {
-            settings.defaultTarget = RouteTarget(browser: .safari, profileId: safariDefault.id)
-            save()
-            return
-        }
+    private func updateDefaultTarget(in settings: inout AppSettings) {
+        if let current = profile(for: settings.defaultTarget),
+           settings.isProfileEnabled(browser: current.browser, profileID: current.id) { return }
 
-        if let first = profiles.first {
+        if let first = profiles.first(where: { settings.isProfileEnabled(browser: $0.browser, profileID: $0.id) }) {
             settings.defaultTarget = RouteTarget(browser: first.browser, profileId: first.id)
-            save()
         }
+        // With none enabled, keep the saved target but expose no active profile.
+        // Routing then shows the empty picker so users can re-enable a profile.
     }
 
     private static func loadSettings(from url: URL, decoder: JSONDecoder) -> AppSettings? {
