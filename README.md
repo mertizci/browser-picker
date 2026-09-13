@@ -54,6 +54,8 @@ Juggling a personal Chrome, a work Chrome profile, and Firefox for clients? Stop
 
 <p align="center"><em><b>Browsers</b> — every profile Browser Picker discovered on your Mac.</em></p>
 
+To give a profile its own icon, open **Settings → Browsers → Choose Icon…** and select an image or company logo (PNG, JPEG, HEIC, TIFF, GIF, or BMP). The icon appears in the link picker, settings, routing rules, and active menu bar selection. Browser Picker saves a copy, so it survives profile refreshes, restarts, and moving the original image. Select **Use Browser Icon** to reset it.
+
 ## Install
 
 > A **universal build** that runs natively on both Apple Silicon and Intel Macs (macOS 14.0+). Every release is signed with a Developer ID certificate and **notarized by Apple**, so it opens without Gatekeeper warnings.

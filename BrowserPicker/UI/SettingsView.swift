@@ -365,6 +365,8 @@ private struct BrowsersSettingsTab: View {
 }
 
 private struct BrowserProfilesCard: View {
+    @EnvironmentObject private var settingsStore: SettingsStore
+    @State private var iconError: String?
     let browser: BrowserKind
     let profiles: [BrowserProfile]
 
@@ -382,13 +384,35 @@ private struct BrowserProfilesCard: View {
     var body: some View {
         SettingsCard(
             title: browser.displayName,
-            subtitle: "\(profiles.count) profile\(profiles.count == 1 ? "" : "s") detected"
+            subtitle: "\(profiles.count) profile\(profiles.count == 1 ? "" : "s") detected. Choose custom icons to tell them apart."
         ) {
             VStack(spacing: 0) {
                 ForEach(Array(profiles.enumerated()), id: \.element.id) { index, profile in
-                    ProfileSummaryRow(profile: profile, detail: spacesDetail(for: profile))
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 4)
+                    HStack(spacing: 12) {
+                        ProfileSummaryRow(profile: profile, detail: spacesDetail(for: profile))
+
+                        VStack(alignment: .trailing, spacing: 6) {
+                            Button(settingsStore.customIconData(for: profile) == nil ? "Choose Icon…" : "Change Icon…") {
+                                chooseIcon(for: profile)
+                            }
+                            .accessibilityLabel("Choose icon for \(browser.displayName) \(profile.displayName)")
+
+                            if settingsStore.customIconData(for: profile) != nil {
+                                Button("Use Browser Icon") {
+                                    do {
+                                        try settingsStore.setCustomIcon(nil, for: profile)
+                                    } catch {
+                                        iconError = error.localizedDescription
+                                    }
+                                }
+                                .accessibilityLabel("Restore browser icon for \(browser.displayName) \(profile.displayName)")
+                            }
+                        }
+                        .controlSize(.small)
+                        .fixedSize()
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 4)
 
                     if index < profiles.count - 1 {
                         Divider()
@@ -396,6 +420,32 @@ private struct BrowserProfilesCard: View {
                     }
                 }
             }
+        }
+        .alert("Couldn’t Update Profile Icon", isPresented: Binding(
+            get: { iconError != nil },
+            set: { if !$0 { iconError = nil } }
+        )) {
+            Button("OK", role: .cancel) { iconError = nil }
+        } message: {
+            Text(iconError ?? "")
+        }
+    }
+
+    private func chooseIcon(for profile: BrowserProfile) {
+        let panel = NSOpenPanel()
+        panel.title = "Choose Icon for \(profile.displayName)"
+        panel.message = "Choose an image or logo for this profile. A copy will be saved in Browser Picker."
+        panel.prompt = "Use Icon"
+        panel.allowedContentTypes = ProfileIconImporter.supportedTypes
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let data = try ProfileIconImporter.pngData(from: url)
+            try settingsStore.setCustomIcon(data, for: profile)
+        } catch {
+            iconError = error.localizedDescription
         }
     }
 }

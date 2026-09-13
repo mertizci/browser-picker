@@ -311,6 +311,32 @@ struct AppSettings: Codable {
     var fallbackMode: FallbackMode
     var defaultTarget: RouteTarget
     var rules: [RoutingRule]
+    /// Imported PNGs, keyed by browser and stable profile ID, independent of discovery.
+    var profileIcons: [String: [String: Data]]
+
+    init(
+        fallbackMode: FallbackMode,
+        defaultTarget: RouteTarget,
+        rules: [RoutingRule],
+        profileIcons: [String: [String: Data]] = [:]
+    ) {
+        self.fallbackMode = fallbackMode
+        self.defaultTarget = defaultTarget
+        self.rules = rules
+        self.profileIcons = profileIcons
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case fallbackMode, defaultTarget, rules, profileIcons
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        fallbackMode = try container.decode(FallbackMode.self, forKey: .fallbackMode)
+        defaultTarget = try container.decode(RouteTarget.self, forKey: .defaultTarget)
+        rules = try container.decode([RoutingRule].self, forKey: .rules)
+        profileIcons = try container.decodeIfPresent([String: [String: Data]].self, forKey: .profileIcons) ?? [:]
+    }
 
     static var `default`: AppSettings {
         AppSettings(

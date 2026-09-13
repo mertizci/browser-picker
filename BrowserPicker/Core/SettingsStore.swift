@@ -12,24 +12,18 @@ final class SettingsStore: ObservableObject {
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
-    private var configURL: URL {
-        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let folder = appSupport.appendingPathComponent("BrowserPicker", isDirectory: true)
-        try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
-        return folder.appendingPathComponent("config.json")
-    }
+    private let configURL: URL
 
-    private init() {
+    init(configURL: URL? = nil) {
         encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         decoder = JSONDecoder()
 
-        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let folder = appSupport.appendingPathComponent("BrowserPicker", isDirectory: true)
-        try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
-        let loadedURL = folder.appendingPathComponent("config.json")
+        self.configURL = configURL ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("BrowserPicker", isDirectory: true)
+            .appendingPathComponent("config.json")
 
-        settings = Self.loadSettings(from: loadedURL, decoder: decoder) ?? .default
+        settings = Self.loadSettings(from: self.configURL, decoder: decoder) ?? .default
     }
 
     func reloadProfiles() {
@@ -82,11 +76,32 @@ final class SettingsStore: ObservableObject {
 
     func save() {
         do {
-            let data = try encoder.encode(settings)
-            try data.write(to: configURL, options: .atomic)
+            try persist(settings)
         } catch {
             NSLog("BrowserPicker: failed to save settings – \(error.localizedDescription)")
         }
+    }
+
+    private func persist(_ settings: AppSettings) throws {
+        try fileManager.createDirectory(at: configURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let data = try encoder.encode(settings)
+        try data.write(to: configURL, options: .atomic)
+    }
+
+    func customIconData(for profile: BrowserProfile) -> Data? {
+        settings.profileIcons[profile.browser.rawValue]?[profile.id]
+    }
+
+    /// Passing nil restores the browser icon. Publish only after saving succeeds.
+    func setCustomIcon(_ data: Data?, for profile: BrowserProfile) throws {
+        var updated = settings
+        let browser = profile.browser.rawValue
+        updated.profileIcons[browser, default: [:]][profile.id] = data
+        if updated.profileIcons[browser]?.isEmpty == true {
+            updated.profileIcons.removeValue(forKey: browser)
+        }
+        try persist(updated)
+        settings = updated
     }
 
     func updateSettings(_ transform: (inout AppSettings) -> Void) {
