@@ -147,8 +147,8 @@ private struct RuleCardView: View {
                         HStack(spacing: 8) {
                             Text(rule.name)
                                 .font(.body.weight(.semibold))
-                            if !rule.enabled || !settingsStore.settings.isProfileEnabled(browser: rule.target.browser, profileID: rule.target.profileId) {
-                                Text(rule.enabled ? "Profile disabled" : "Disabled")
+                            if !rule.enabled || !settingsStore.settings.hasEnabledDestination(rule) {
+                                Text(!rule.enabled ? "Disabled" : rule.action == .ask ? "Profiles disabled" : "Profile disabled")
                                     .font(.caption2.weight(.medium))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
@@ -180,8 +180,7 @@ private struct RuleCardView: View {
                         if let conflict {
                             RuleConflictNotice(
                                 conflict: conflict,
-                                earlierDestination: settingsStore.profile(for: conflict.earlierRule.target)?.routeLabel(spaceId: conflict.earlierRule.target.spaceId)
-                                    ?? "\(conflict.earlierRule.target.browser.displayName) · \(conflict.earlierRule.target.profileId)",
+                                earlierDestination: settingsStore.destinationLabel(for: conflict.earlierRule),
                                 compact: true
                             )
                         }
@@ -231,12 +230,46 @@ private struct RuleCardView: View {
         .onHover { isHovered = $0 }
     }
 
+    /// Choices shown before the rest collapse into "+N".
+    private let visibleChoices = 3
+
     @ViewBuilder
     private var destinationRow: some View {
-        if let profile = settingsStore.profile(for: rule.target) {
+        switch rule.action {
+        case .open:
+            destinationChip(rule.target)
+        case .ask:
+            HStack(spacing: 6) {
+                Label("Ask", systemImage: "questionmark.app")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                ForEach(rule.choices.prefix(visibleChoices), id: \.self) { choice in
+                    // Dimmed like the prompt leaves it out, until re-enabled.
+                    destinationChip(choice)
+                        .opacity(isEnabled(choice) ? 1 : 0.45)
+                }
+                if rule.choices.count > visibleChoices {
+                    Text("+\(rule.choices.count - visibleChoices)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .lineLimit(1)
+            .help(settingsStore.destinationLabel(for: rule)
+                + (rule.choices.allSatisfy(isEnabled) ? "" : "\nDisabled profiles are left out of the prompt."))
+        }
+    }
+
+    private func isEnabled(_ target: RouteTarget) -> Bool {
+        settingsStore.settings.isProfileEnabled(browser: target.browser, profileID: target.profileId)
+    }
+
+    @ViewBuilder
+    private func destinationChip(_ target: RouteTarget) -> some View {
+        if let profile = settingsStore.profile(for: target) {
             HStack(spacing: 8) {
                 ProfileIconView(profile: profile, size: 18)
-                Text(profile.routeLabel(spaceId: rule.target.spaceId))
+                Text(profile.routeLabel(spaceId: target.spaceId))
                     .font(.caption.weight(.medium))
             }
             .padding(.horizontal, 8)
@@ -244,7 +277,7 @@ private struct RuleCardView: View {
             .background(Color.primary.opacity(0.04), in: Capsule())
         } else {
             Label {
-                Text("\(rule.target.browser.displayName) · \(rule.target.profileId)")
+                Text(settingsStore.destinationLabel(for: target))
                     .font(.caption)
             } icon: {
                 Image(systemName: "exclamationmark.triangle.fill")

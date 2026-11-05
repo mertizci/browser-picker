@@ -68,6 +68,22 @@ struct RouteDestinationGroup: Identifiable {
         }
     }
 
+    /// Only the destinations an ask rule offers, grouped as in `all(in:)`.
+    /// Headings are worked out from the offered profiles alone, so they name
+    /// only what tells the offered destinations apart. Empty when none of the
+    /// choices is among `profiles`.
+    static func all(in profiles: [BrowserProfile], offering choices: [RouteTarget]) -> [RouteDestinationGroup] {
+        let offered = Set(choices)
+        let offeredProfiles = profiles.filter { profile in
+            choices.contains { $0.browser == profile.browser && $0.profileId == profile.id }
+        }
+        return all(in: offeredProfiles).compactMap { group in
+            let destinations = group.destinations.filter { offered.contains($0.target) }
+            guard !destinations.isEmpty else { return nil }
+            return RouteDestinationGroup(id: group.id, title: group.title, destinations: destinations)
+        }
+    }
+
     private static func containerGroups(
         in profile: BrowserProfile,
         namesBrowser: Bool,

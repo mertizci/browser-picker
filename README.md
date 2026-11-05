@@ -38,6 +38,7 @@ This README describes the current source. Features shown here may not yet be ava
 - **Source application matching** — search installed apps by name, then route links from Mail, Slack, or another application.
 - **Multiple conditions per rule** — combine conditions with **Any (OR)** or **All (AND)**, and apply **NOT** to individual conditions.
 - **Eight condition types** — URL contains, host equals, host suffix, path equals, path starts with, path contains, URL regex, and source application.
+- **Ask rules** — let a rule prompt you to choose between selected profiles, such as your private or work account for Google sign-in.
 - **Rule tester** — preview the matching saved rule and destination without opening the URL.
 - **Quick rule management** — duplicate from the context menu, toggle rules directly in the list, and drag to change priority.
 - **Rule conflict warnings** — see identical conditions and rules fully covered by an earlier rule, including conflicting destinations, in the list and while editing.
@@ -104,7 +105,7 @@ Switch modes in **Settings → General → Browser mode**. Your profile settings
 
 Open **Settings → Rules → Add Rule**, give the rule a name, add its conditions, and select a destination browser and profile. For Zen, you can also select a space. Click **Save Rule** when ready.
 
-Rules run in list order. The first enabled rule whose conditions match and whose destination profile is available and enabled handles the link. Drag rules to change their priority. If none match, your fallback applies:
+Rules run in list order. The first enabled rule whose conditions match and whose destination profile is available and enabled handles the link. An [ask rule](#ask-which-profile-to-use) needs at least one enabled profile. Drag rules to change their priority. If none match, your fallback applies:
 
 | Fallback | What happens |
 | --- | --- |
@@ -114,6 +115,16 @@ Rules run in list order. The first enabled rule whose conditions match and whose
 Right-click a rule and choose **Duplicate** to insert an independent copy below it. The copy preserves the conditions, match mode, destination, and enabled state. Use the switch in each rule row to disable or re-enable it without editing or deleting it.
 
 The editor opens in a movable, resizable window. Add Rule and Edit Rule share the last saved window size; it is fitted to the current screen when needed. Scroll to reach additional fields while the action buttons remain visible.
+
+### Ask which profile to use
+
+Some links need a different profile each time. A Google sign-in started from a work app should use your work account, but the same link from a personal app should use your private one. Under **Then**, choose **Ask each time** instead of **Open in profile**, and tick the profiles to offer. You can choose profiles and Zen spaces from different browsers, and you must choose at least two.
+
+| Rule | Prompt offers |
+| --- | --- |
+| **Host equals `accounts.google.com`** → **Ask each time** | Chrome · Private, Chrome · Work |
+
+When the rule matches, the picker shows only those profiles and the rule's name, even if your fallback is **Use menu bar selection**. Press **1**–**9** to choose a profile, or **Esc** to cancel. These shortcuts also work in the fallback and Basic mode picker. Disabled choices are left out of the prompt. The rule is skipped only when all of its choices are disabled. If none of its profiles can be found, the prompt lists every enabled profile. Rule tester shows which profiles the prompt would offer.
 
 ### Conflicting rules
 

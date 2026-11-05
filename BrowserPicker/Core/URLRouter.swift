@@ -1,12 +1,19 @@
 import AppKit
 import Foundation
 
+/// A link waiting in the picker, and the ask rule that sent it there, if any.
+struct PickerRequest: Equatable {
+    let url: URL
+    /// `nil` for the plain picker (Basic mode or fallback), which offers every
+    /// enabled profile.
+    let rule: RoutingRule?
+}
+
 @MainActor
 final class URLRouter: ObservableObject {
     static let shared = URLRouter(settingsStore: .shared)
 
-    @Published var pendingPickerURL: URL?
-    @Published var pendingPickerContext: RoutingContext?
+    @Published private(set) var pendingPicker: PickerRequest?
 
     private let ruleEngine = RuleEngine()
     private let launcher = BrowserLauncher()
@@ -49,9 +56,9 @@ final class URLRouter: ObservableObject {
 
         switch ruleEngine.decision(for: context, settings: settings, hasEnabledDefault: settingsStore.enabledDefaultProfile != nil) {
         case .picker:
-            pendingPickerURL = url
-            pendingPickerContext = context
-            PickerWindowController.shared.show(settingsStore: settingsStore, urlRouter: self)
+            showPicker(PickerRequest(url: url, rule: nil))
+        case .ask(let rule):
+            showPicker(PickerRequest(url: url, rule: rule))
         case .rule(let rule):
             open(url: url, target: rule.target)
         case .defaultTarget(let target):
@@ -59,17 +66,20 @@ final class URLRouter: ObservableObject {
         }
     }
 
+    private func showPicker(_ request: PickerRequest) {
+        pendingPicker = request
+        PickerWindowController.shared.show(settingsStore: settingsStore, urlRouter: self)
+    }
+
     func completePickerSelection(url: URL, target: RouteTarget) {
         guard let profile = settingsStore.profile(for: target), settingsStore.isProfileEnabled(profile) else { return }
-        pendingPickerURL = nil
-        pendingPickerContext = nil
+        pendingPicker = nil
         PickerWindowController.shared.close()
         open(url: url, target: target)
     }
 
     func cancelPicker() {
-        pendingPickerURL = nil
-        pendingPickerContext = nil
+        pendingPicker = nil
         PickerWindowController.shared.close()
     }
 

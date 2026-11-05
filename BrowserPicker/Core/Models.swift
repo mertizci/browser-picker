@@ -401,6 +401,23 @@ enum RuleMatchMode: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// What a rule does with a link once its conditions match.
+enum RuleAction: String, Codable, CaseIterable, Identifiable {
+    /// Open the link in the rule's `target`.
+    case open
+    /// Show the picker, offering only the rule's `choices`.
+    case ask
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .open: return "Open in profile"
+        case .ask: return "Ask each time"
+        }
+    }
+}
+
 struct RoutingRule: Codable, Identifiable, Hashable {
     var id: UUID
     var name: String
@@ -408,7 +425,12 @@ struct RoutingRule: Codable, Identifiable, Hashable {
     var priority: Int
     var matchers: [RuleMatcher]
     var matchMode: RuleMatchMode
+    var action: RuleAction
+    /// Where an `.open` rule sends links. An `.ask` rule saves its first choice
+    /// here, so versions without ask rules still open a profile it offers.
     var target: RouteTarget
+    /// The destinations an `.ask` rule offers in the picker.
+    var choices: [RouteTarget]
 
     init(
         id: UUID = UUID(),
@@ -417,7 +439,9 @@ struct RoutingRule: Codable, Identifiable, Hashable {
         priority: Int,
         matchers: [RuleMatcher],
         matchMode: RuleMatchMode = .any,
-        target: RouteTarget
+        action: RuleAction = .open,
+        target: RouteTarget,
+        choices: [RouteTarget] = []
     ) {
         self.id = id
         self.name = name
@@ -425,11 +449,23 @@ struct RoutingRule: Codable, Identifiable, Hashable {
         self.priority = priority
         self.matchers = matchers
         self.matchMode = matchMode
+        self.action = action
         self.target = target
+        self.choices = choices
+    }
+
+    /// Every place this rule can send a link.
+    var destinations: [RouteTarget] {
+        action == .ask ? choices : [target]
+    }
+
+    /// Whether both rules handle a link the same way, ignoring choice order.
+    func hasSameDestination(as other: RoutingRule) -> Bool {
+        action == other.action && Set(destinations) == Set(other.destinations)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, enabled, priority, matchers, matcher, matchMode, target
+        case id, name, enabled, priority, matchers, matcher, matchMode, action, target, choices
     }
 
     init(from decoder: Decoder) throws {
@@ -439,6 +475,8 @@ struct RoutingRule: Codable, Identifiable, Hashable {
         enabled = try container.decode(Bool.self, forKey: .enabled)
         priority = try container.decode(Int.self, forKey: .priority)
         target = try container.decode(RouteTarget.self, forKey: .target)
+        action = try container.decodeIfPresent(RuleAction.self, forKey: .action) ?? .open
+        choices = try container.decodeIfPresent([RouteTarget].self, forKey: .choices) ?? []
         matchMode = try container.decodeIfPresent(RuleMatchMode.self, forKey: .matchMode) ?? .any
         // Existing installations store one condition under "matcher".
         matchers = try container.decodeIfPresent([RuleMatcher].self, forKey: .matchers)
@@ -453,7 +491,9 @@ struct RoutingRule: Codable, Identifiable, Hashable {
         try container.encode(priority, forKey: .priority)
         try container.encode(matchers, forKey: .matchers)
         try container.encode(matchMode, forKey: .matchMode)
+        try container.encode(action, forKey: .action)
         try container.encode(target, forKey: .target)
+        try container.encode(choices, forKey: .choices)
     }
 
     func matches(url: URL, sourceApp: String?) -> Bool {
@@ -510,6 +550,11 @@ struct AppSettings: Codable {
     func isProfileEnabled(browser: BrowserKind, profileID: String) -> Bool {
         let id = browser == .safari && profileID == "safari-default" ? SafariProfileRecord.defaultID : profileID
         return disabledProfileIDs[browser.rawValue]?.contains(id) != true
+    }
+
+    /// A rule is skipped once every place it can send a link is disabled.
+    func hasEnabledDestination(_ rule: RoutingRule) -> Bool {
+        rule.destinations.contains { isProfileEnabled(browser: $0.browser, profileID: $0.profileId) }
     }
 
     static var `default`: AppSettings {

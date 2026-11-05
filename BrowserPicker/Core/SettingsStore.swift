@@ -247,24 +247,41 @@ final class SettingsStore: ObservableObject {
         profiles.filter { $0.browser == browser }
     }
 
+    /// How a destination reads in lists and notices, including one whose
+    /// profile is no longer discovered.
+    func destinationLabel(for target: RouteTarget) -> String {
+        profile(for: target)?.routeLabel(spaceId: target.spaceId)
+            ?? "\(target.browser.displayName) · \(target.profileId)"
+    }
+
+    /// "Chrome · Work", or "Ask: Chrome · Private or Chrome · Work".
+    func destinationLabel(for rule: RoutingRule) -> String {
+        guard rule.action == .ask else { return destinationLabel(for: rule.target) }
+        let labels = rule.choices.map { destinationLabel(for: $0) }
+        guard let last = labels.last else { return "Ask" }
+        let leading = labels.dropLast().joined(separator: ", ")
+        return "Ask: " + (leading.isEmpty ? last : "\(leading) or \(last)")
+    }
+
     private func migrateLegacySafariTargets() {
-        var changed = false
-
-        if settings.defaultTarget.browser == .safari,
-           settings.defaultTarget.profileId == "safari-default" {
-            settings.defaultTarget.profileId = SafariProfileRecord.defaultID
-            changed = true
+        func migrated(_ target: RouteTarget) -> RouteTarget {
+            guard target.browser == .safari, target.profileId == "safari-default" else { return target }
+            var target = target
+            target.profileId = SafariProfileRecord.defaultID
+            return target
         }
 
-        for index in settings.rules.indices {
-            if settings.rules[index].target.browser == .safari,
-               settings.rules[index].target.profileId == "safari-default" {
-                settings.rules[index].target.profileId = SafariProfileRecord.defaultID
-                changed = true
-            }
+        // Work on a copy so settings only publish when something changed.
+        var updated = settings
+        updated.defaultTarget = migrated(updated.defaultTarget)
+        for index in updated.rules.indices {
+            updated.rules[index].target = migrated(updated.rules[index].target)
+            updated.rules[index].choices = updated.rules[index].choices.map(migrated)
         }
 
-        if changed { save() }
+        guard updated.defaultTarget != settings.defaultTarget || updated.rules != settings.rules else { return }
+        settings = updated
+        save()
     }
 
     private func ensureDefaultTargetIsValid() {

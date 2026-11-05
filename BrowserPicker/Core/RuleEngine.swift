@@ -1,7 +1,10 @@
 import Foundation
 
 enum RoutingDecision {
+    /// An `.open` rule matched: send the link to its target.
     case rule(RoutingRule)
+    /// An `.ask` rule matched: show the picker with the rule's choices.
+    case ask(RoutingRule)
     case defaultTarget(RouteTarget)
     case picker
 }
@@ -11,7 +14,7 @@ struct RuleEngine {
     func decision(for context: RoutingContext, settings: AppSettings, hasEnabledDefault: Bool) -> RoutingDecision {
         if settings.basicMode { return .picker }
         if let rule = matchingRule(for: context, in: settings) {
-            return .rule(rule)
+            return rule.action == .ask ? .ask(rule) : .rule(rule)
         }
         if settings.fallbackMode == .picker || !hasEnabledDefault {
             return .picker
@@ -23,7 +26,7 @@ struct RuleEngine {
         guard !settings.basicMode else { return nil }
         return settings.rules
             .filter(\.enabled)
-            .filter { settings.isProfileEnabled(browser: $0.target.browser, profileID: $0.target.profileId) }
+            .filter { settings.hasEnabledDestination($0) }
             .sorted { $0.priority < $1.priority }
             .first { $0.matches(url: context.url, sourceApp: context.sourceApp) }
     }
@@ -34,7 +37,7 @@ struct RuleEngine {
         pickerChoice: RouteTarget? = nil
     ) -> RouteTarget {
         if let rule = matchingRule(for: context, in: settings) {
-            return rule.target
+            return rule.action == .ask ? pickerChoice ?? rule.target : rule.target
         }
         if let pickerChoice {
             return pickerChoice

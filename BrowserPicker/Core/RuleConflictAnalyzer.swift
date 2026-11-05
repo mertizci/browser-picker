@@ -10,7 +10,7 @@ struct RuleConflict {
     let earlierRule: RoutingRule
     let kind: Kind
 
-    var hasDifferentDestination: Bool { rule.target != earlierRule.target }
+    var hasDifferentDestination: Bool { !rule.hasSameDestination(as: earlierRule) }
 
     var title: String {
         switch kind {
@@ -41,7 +41,7 @@ struct RuleConflictAnalyzer {
         // A missing (but not disabled) profile still wins routing and then fails
         // to launch, so it must not be silently omitted from this analysis.
         let active = settings.rules
-            .filter { $0.enabled && settings.isProfileEnabled(browser: $0.target.browser, profileID: $0.target.profileId) }
+            .filter { $0.enabled && settings.hasEnabledDestination($0) }
             .sorted { $0.priority < $1.priority }
             .filter { !$0.matchers.isEmpty && $0.matchers.allSatisfy(\.isValid) }
 

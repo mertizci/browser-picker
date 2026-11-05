@@ -49,6 +49,8 @@ enum RuleTester {
         case .defaultTarget(let fallback):
             rule = nil
             target = fallback
+        case .ask(let matched):
+            return askResult(for: matched, store: store)
         case .picker:
             if store.enabledProfiles.isEmpty {
                 return RuleTestResult(title: "No enabled profiles", detail: "No rule matched. The picker would ask you to enable a profile in Settings → Browsers.", isWarning: true)
@@ -61,5 +63,17 @@ enum RuleTester {
             return RuleTestResult(title: "Destination unavailable", detail: "\(reason) The saved \(target.browser.displayName) profile “\(target.profileId)” was not found. Update the rule’s destination in Settings → Rules.", target: target, matchedRuleID: rule?.id, isWarning: true)
         }
         return RuleTestResult(title: "Would open in", detail: reason, profile: profile, target: target, matchedRuleID: rule?.id)
+    }
+
+    /// Lists what the picker would offer, the same way the picker filters it.
+    @MainActor
+    private static func askResult(for rule: RoutingRule, store: SettingsStore) -> RuleTestResult {
+        let offered = RouteDestinationGroup.all(in: store.enabledProfiles, offering: rule.choices)
+            .flatMap(\.destinations)
+            .map { $0.profile.routeLabel(spaceId: $0.space?.id) }
+        guard !offered.isEmpty else {
+            return RuleTestResult(title: "Browser picker would open", detail: "Matched rule: \(rule.name). None of its profiles were found, so the picker would list every enabled profile. Update the rule’s choices in Settings → Rules.", matchedRuleID: rule.id, isWarning: true)
+        }
+        return RuleTestResult(title: "Browser picker would open", detail: "Matched rule: \(rule.name). It asks you to choose: \(offered.joined(separator: ", ")).", matchedRuleID: rule.id)
     }
 }

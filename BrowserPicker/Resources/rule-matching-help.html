@@ -13,7 +13,7 @@
   p { margin:8px 0 14px; } a { color:var(--accent); } a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
   nav { display:flex; flex-wrap:wrap; gap:8px 16px; margin:20px 0; }
   section { padding:20px; margin:18px 0; border:1px solid var(--border); border-radius:12px; background:var(--card); }
-  code { font:0.92em ui-monospace,Menlo,monospace; overflow-wrap:anywhere; }
+  code, kbd { font:0.92em ui-monospace,Menlo,monospace; overflow-wrap:anywhere; }
   pre { white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; border:1px solid var(--border); border-radius:8px; }
   .muted { color:var(--muted); } ul,ol { padding-left:22px; } li { margin:6px 0; }
   table { width:100%; border-collapse:collapse; font-size:14px; } th,td { text-align:left; vertical-align:top; padding:10px 6px; border-bottom:1px solid var(--border); }
@@ -36,7 +36,7 @@
     <li>Under <strong>Match conditions</strong>, choose <strong>Any (OR)</strong> or <strong>All (AND)</strong>.</li>
     <li>Choose a condition type from the dropdown and enter its value. Use <strong>Add Condition</strong> for another condition, or the minus button to remove one.</li>
     <li>Check <strong>NOT</strong> to invert an individual condition.</li>
-    <li>Choose an enabled browser profile and click <strong>Save Rule</strong>.</li>
+    <li>Under <strong>Then</strong>, choose <strong>Open in profile</strong> and pick an enabled profile, or <strong>Ask each time</strong> and tick at least two profiles to choose between. Click <strong>Save Rule</strong>.</li>
   </ol>
   <p>Rules run in list order: the first matching enabled rule wins. Disabled rules and rules targeting disabled profiles are skipped. If no rule matches, your configured fallback handles the link.</p>
 </section>
@@ -92,6 +92,11 @@
   <p class="recipe">Mode: <strong>All (AND)</strong><br>Source application: <strong>Mail</strong><br>Host equals: <code>example.com</code></p>
   <p>Only links to this domain sent by Mail open in the chosen work profile. Use <strong>Any (OR)</strong> with several source application conditions to match links from any of those apps.</p>
   <p>Source information comes from the sending macOS event. Some apps open links through helpers or intermediaries, and some senders cannot be identified. An unknown source matches neither a Source application condition nor its <strong>NOT</strong> version. URL-only rules and your fallback still work. The frontmost application is not used as a guess.</p>
+  <div class="recipe">
+    <h3>Choose the account for Google sign-in</h3>
+    <p>Host equals: <code>accounts.google.com</code><br>Then: <strong>Ask each time</strong> — Chrome · Private, Chrome · Work</p>
+    <p>Sign-in links show a prompt with only those two profiles, so you can pick the account each time. Press <kbd>1</kbd>, <kbd>2</kbd> … to choose without clicking, or <kbd>Esc</kbd> to cancel. Disabled choices are left out of the prompt; the rule is skipped only when every choice is disabled.</p>
+  </div>
   <div class="recipe">
     <h3>Two work domains</h3>
     <p>Mode: <strong>Any (OR)</strong><br>Host equals: <code>gitlab.example.com</code><br>Host equals: <code>jira.example.com</code></p>

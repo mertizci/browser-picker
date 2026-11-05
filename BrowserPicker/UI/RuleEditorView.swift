@@ -7,25 +7,37 @@ struct RuleEditorView: View {
     @State private var enabled: Bool
     @State private var conditions: [EditableRuleCondition]
     @State private var matchMode: RuleMatchMode
+    @State private var action: RuleAction
     @State private var selectedBrowser: BrowserKind
     @State private var selectedProfileId: String
     @State private var selectedSpaceId: String?
+    /// What an ask rule offers. Kept while switching to "Open in profile" and
+    /// back, like the open destination is kept the other way round.
+    @State private var selectedChoices: Set<RouteTarget>
     @State private var showDeleteConfirmation = false
     @State private var draftID: UUID
 
     private let existingID: UUID?
     private let existingPriority: Int?
+    /// The saved order of the choices, for those the list cannot show.
+    private let existingChoices: [RouteTarget]
     private let onSave: (RoutingRule) -> Void
     private let onClose: () -> Void
+
+    /// An ask rule with a single choice would never need to ask.
+    private static let minimumChoices = 2
 
     init(rule: RoutingRule?, onClose: @escaping () -> Void, onSave: @escaping (RoutingRule) -> Void) {
         self.onClose = onClose
         existingID = rule?.id
         existingPriority = rule?.priority
+        existingChoices = rule?.choices ?? []
         _draftID = State(initialValue: rule?.id ?? UUID())
         _name = State(initialValue: rule?.name ?? "")
         _enabled = State(initialValue: rule?.enabled ?? true)
         _matchMode = State(initialValue: rule?.matchMode ?? .any)
+        _action = State(initialValue: rule?.action ?? .open)
+        _selectedChoices = State(initialValue: Set(rule?.choices ?? []))
         let matchers = rule?.matchers ?? []
         _conditions = State(initialValue: (matchers.isEmpty ? [RuleMatcher(kind: .urlContains, value: "")] : matchers)
             .map { EditableRuleCondition(matcher: $0) })
@@ -68,8 +80,7 @@ struct RuleEditorView: View {
                         if let conflict = draftConflict {
                             RuleConflictNotice(
                                 conflict: conflict,
-                                earlierDestination: settingsStore.profile(for: conflict.earlierRule.target)?.routeLabel(spaceId: conflict.earlierRule.target.spaceId)
-                                    ?? "\(conflict.earlierRule.target.browser.displayName) · \(conflict.earlierRule.target.profileId)"
+                                earlierDestination: settingsStore.destinationLabel(for: conflict.earlierRule)
                             )
                             .padding(14)
                             .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
@@ -118,53 +129,18 @@ struct RuleEditorView: View {
                             .buttonStyle(.bordered)
                         }
 
-                        editorSection(title: "Open in", subtitle: "Pick the browser, profile and space for matched links.", icon: "arrow.up.forward.app") {
-                            Picker("Browser", selection: $selectedBrowser) {
-                                ForEach(BrowserKind.allCases) { browser in
-                                    Text(browser.displayName).tag(browser)
+                        editorSection(title: "Then", subtitle: actionSubtitle, icon: action == .ask ? "questionmark.app" : "arrow.up.forward.app") {
+                            Picker("Action", selection: $action) {
+                                ForEach(RuleAction.allCases) { action in
+                                    Text(action.displayName).tag(action)
                                 }
                             }
-                            .pickerStyle(.menu)
+                            .pickerStyle(.segmented)
                             .labelsHidden()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .onChange(of: selectedBrowser) { _, newValue in
-                                resolveProfileSelection(for: newValue)
-                            }
 
-                            if let profile = selectedProfile, !settingsStore.isProfileEnabled(profile) {
-                                Label("This rule’s profile is disabled. Choose an enabled profile or re-enable it in Browsers.", systemImage: "exclamationmark.triangle")
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
-                            }
-
-                            let profiles = settingsStore.enabledProfiles(for: selectedBrowser)
-                            if profiles.isEmpty {
-                                Label("No enabled profiles for this browser. Enable one in Settings → Browsers.", systemImage: "exclamationmark.triangle")
-                                    .font(.caption)
-                                    .foregroundStyle(.orange)
-                                    .padding(.vertical, 4)
-                            } else {
-                                VStack(alignment: .leading, spacing: 14) {
-                                    ForEach(RouteDestinationGroup.all(in: profiles)) { group in
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            if let title = group.title {
-                                                Text(title.uppercased())
-                                                    .font(.caption2.weight(.bold))
-                                                    .foregroundStyle(.tertiary)
-                                            }
-                                            ForEach(group.destinations) { destination in
-                                                DestinationPickerRow(
-                                                    destination: destination,
-                                                    isSelected: destination.target == selectedTarget,
-                                                    action: {
-                                                        selectedProfileId = destination.profile.id
-                                                        selectedSpaceId = destination.space?.id
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                            switch action {
+                            case .open: openDestinationPicker
+                            case .ask: askChoicesPicker
                             }
                         }
                     }
@@ -218,6 +194,116 @@ struct RuleEditorView: View {
         }
     }
 
+    private var actionSubtitle: String {
+        switch action {
+        case .open: return "Pick the browser, profile and space for matched links."
+        case .ask: return "Matched links show a prompt with the profiles you tick."
+        }
+    }
+
+    @ViewBuilder
+    private var openDestinationPicker: some View {
+        Picker("Browser", selection: $selectedBrowser) {
+            ForEach(BrowserKind.allCases) { browser in
+                Text(browser.displayName).tag(browser)
+            }
+        }
+        .pickerStyle(.menu)
+        .labelsHidden()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onChange(of: selectedBrowser) { _, newValue in
+            resolveProfileSelection(for: newValue)
+        }
+
+        if let profile = selectedProfile, !settingsStore.isProfileEnabled(profile) {
+            Label("This rule’s profile is disabled. Choose an enabled profile or re-enable it in Browsers.", systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.orange)
+        }
+
+        let profiles = settingsStore.enabledProfiles(for: selectedBrowser)
+        if profiles.isEmpty {
+            Label("No enabled profiles for this browser. Enable one in Settings → Browsers.", systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .padding(.vertical, 4)
+        } else {
+            destinationList(RouteDestinationGroup.all(in: profiles), multiSelect: false,
+                            isSelected: { $0 == selectedTarget }) { destination in
+                selectedProfileId = destination.profile.id
+                selectedSpaceId = destination.space?.id
+            }
+        }
+    }
+
+    /// Every enabled destination across browsers, since one prompt can offer
+    /// profiles of different browsers.
+    @ViewBuilder
+    private var askChoicesPicker: some View {
+        let groups = RouteDestinationGroup.all(in: settingsStore.enabledProfiles)
+        if groups.isEmpty {
+            Label("No enabled profiles. Enable some in Settings → Browsers.", systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .padding(.vertical, 4)
+        } else {
+            destinationList(groups, multiSelect: true,
+                            isSelected: { selectedChoices.contains($0) }) { destination in
+                if selectedChoices.remove(destination.target) == nil {
+                    selectedChoices.insert(destination.target)
+                }
+            }
+        }
+
+        let unlisted = unlistedChoices
+        if !unlisted.isEmpty {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Label("Also offers \(unlisted.count == 1 ? "a profile that is" : "\(unlisted.count) profiles that are") disabled or no longer found. The prompt skips \(unlisted.count == 1 ? "it" : "them").",
+                      systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .help(unlisted.map { settingsStore.destinationLabel(for: $0) }.joined(separator: "\n"))
+                Spacer(minLength: 0)
+                Button("Remove") { selectedChoices.subtract(unlisted) }
+                    .buttonStyle(.link)
+                    .font(.caption)
+            }
+        }
+
+        if listedChoices.count < Self.minimumChoices {
+            Text("Choose at least two profiles to ask between.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func destinationList(
+        _ groups: [RouteDestinationGroup],
+        multiSelect: Bool,
+        isSelected: @escaping (RouteTarget) -> Bool,
+        onSelect: @escaping (RouteDestination) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(groups) { group in
+                VStack(alignment: .leading, spacing: 8) {
+                    if let title = group.title {
+                        Text(title.uppercased())
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    ForEach(group.destinations) { destination in
+                        DestinationPickerRow(
+                            destination: destination,
+                            isSelected: isSelected(destination.target),
+                            multiSelect: multiSelect,
+                            action: { onSelect(destination) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private var rulePreview: some View {
         HStack(spacing: 10) {
@@ -235,10 +321,16 @@ struct RuleEditorView: View {
                 .foregroundStyle(.tertiary)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("OPEN IN")
+                Text(action == .ask ? "ASK BETWEEN" : "OPEN IN")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.tertiary)
-                if let profile = selectedProfile {
+                if action == .ask {
+                    let choices = listedChoices
+                    Text(choices.isEmpty ? "Choose profiles…" : choices.map { settingsStore.destinationLabel(for: $0) }.joined(separator: " or "))
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(choices.isEmpty ? .secondary : .primary)
+                        .lineLimit(1)
+                } else if let profile = selectedProfile {
                     HStack(spacing: 6) {
                         ProfileIconView(profile: profile, size: 16)
                         Text(profile.routeLabel(spaceId: selectedSpaceId))
@@ -319,20 +411,61 @@ struct RuleEditorView: View {
         return matcher.summary
     }
 
+    /// Ticked choices the editor lists, in the order the prompt shows them.
+    private var listedChoices: [RouteTarget] {
+        RouteDestinationGroup.all(in: settingsStore.enabledProfiles)
+            .flatMap(\.destinations)
+            .map(\.target)
+            .filter { selectedChoices.contains($0) }
+    }
+
+    /// Saved choices the list cannot show, because their profile is disabled
+    /// or no longer discovered. They are kept, like an open rule's target is.
+    private var unlistedChoices: [RouteTarget] {
+        let listed = Set(listedChoices)
+        return existingChoices.filter { selectedChoices.contains($0) && !listed.contains($0) }
+    }
+
+    private var hasValidDestination: Bool {
+        switch action {
+        case .open: return selectedProfile.map { settingsStore.isProfileEnabled($0) } == true
+        case .ask: return listedChoices.count >= Self.minimumChoices
+        }
+    }
+
     private var canSave: Bool {
         !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !conditions.isEmpty && conditions.allSatisfy { $0.matcher.isValid }
-            && selectedProfile.map { settingsStore.isProfileEnabled($0) } == true
+            && hasValidDestination
+    }
+
+    /// The rule as it would be saved.
+    private var draftRule: RoutingRule {
+        let choices = action == .ask ? listedChoices + unlistedChoices : []
+        return RoutingRule(
+            id: draftID,
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+            enabled: enabled,
+            priority: existingPriority ?? 0,
+            matchers: conditions.map {
+                RuleMatcher(kind: $0.matcher.kind, value: $0.matcher.normalizedValue, isNegated: $0.matcher.isNegated,
+                            applicationName: $0.matcher.applicationName)
+            },
+            matchMode: matchMode,
+            action: action,
+            // An ask rule keeps its first choice as target for older versions.
+            target: choices.first ?? selectedTarget,
+            choices: choices
+        )
     }
 
     private var draftConflict: RuleConflict? {
         // Incomplete conditions are not diagnosed while the user is typing.
-        guard !selectedProfileId.isEmpty else { return nil }
-        let draft = RoutingRule(id: draftID, name: name, enabled: enabled,
-                                priority: existingPriority ?? 0,
-                                matchers: conditions.map(\.matcher), matchMode: matchMode,
-                                target: selectedTarget)
-        return RuleConflictAnalyzer().conflict(for: draft, in: settingsStore.settings)
+        switch action {
+        case .open: guard !selectedProfileId.isEmpty else { return nil }
+        case .ask: guard !selectedChoices.isEmpty else { return nil }
+        }
+        return RuleConflictAnalyzer().conflict(for: draftRule, in: settingsStore.settings)
     }
 
     private func resolveProfileSelection(for browser: BrowserKind? = nil) {
@@ -365,19 +498,7 @@ struct RuleEditorView: View {
 
     private func save() {
         guard canSave else { return }
-        let rule = RoutingRule(
-            id: draftID,
-            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-            enabled: enabled,
-            priority: existingPriority ?? 0,
-            matchers: conditions.map {
-                RuleMatcher(kind: $0.matcher.kind, value: $0.matcher.normalizedValue, isNegated: $0.matcher.isNegated,
-                            applicationName: $0.matcher.applicationName)
-            },
-            matchMode: matchMode,
-            target: selectedTarget
-        )
-        onSave(rule)
+        onSave(draftRule)
         onClose()
     }
 }
@@ -461,7 +582,18 @@ private struct MatchConditionRow: View {
 private struct DestinationPickerRow: View {
     let destination: RouteDestination
     let isSelected: Bool
+    /// Checkboxes for picking several destinations, radio circles for one.
+    var multiSelect = false
     let action: () -> Void
+
+    private var indicator: String {
+        switch (multiSelect, isSelected) {
+        case (true, true): return "checkmark.square.fill"
+        case (true, false): return "square"
+        case (false, true): return "checkmark.circle.fill"
+        case (false, false): return "circle"
+        }
+    }
 
     var body: some View {
         Button(action: action) {
@@ -477,7 +609,7 @@ private struct DestinationPickerRow: View {
                     }
                 }
                 Spacer()
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                Image(systemName: indicator)
                     .foregroundStyle(isSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
             }
             .padding(.horizontal, 12)
